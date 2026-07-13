@@ -87,6 +87,44 @@ void main() {
     expect(await db.templateDao.getWithExercises(copyId), isNotNull);
   });
 
+  test('séance cardio : durée + distance et note d\'exercice', () async {
+    final exercises = await db.exerciseDao.watchAllWithMuscles().first;
+    final rower =
+        exercises.firstWhere((e) => e.exercise.name == 'Rameur');
+    expect(rower.isCardio, isTrue);
+
+    final sessionId = await db.sessionDao.saveCompletedSession(
+      CompletedSessionDraft(
+        date: DateTime(2026, 7, 12, 18),
+        templateId: null,
+        name: 'Cardio',
+        notes: '',
+        durationSeconds: 1300,
+        exercises: [
+          CompletedExerciseDraft(
+            exerciseId: rower.exercise.id,
+            notes: 'Résistance 6',
+            sets: const [
+              CompletedSetDraft(
+                  weightKg: 0,
+                  reps: 0,
+                  durationSeconds: 1200,
+                  distanceMeters: 2500),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final detail = await db.sessionDao.getDetail(sessionId);
+    final entry = detail!.exercises.single;
+    expect(entry.notes, 'Résistance 6');
+    expect(entry.sets.single.durationSeconds, 1200);
+    expect(entry.sets.single.distanceMeters, 2500);
+    expect(await db.sessionDao.lastNoteForExercise(rower.exercise.id),
+        'Résistance 6');
+  });
+
   test('sauvegarde d\'une séance et dernière performance', () async {
     final exercises = await db.exerciseDao.watchAllWithMuscles().first;
     final bench = exercises

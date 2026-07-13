@@ -116,7 +116,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               const SizedBox(height: 16),
               _ProgressBody(
                   exerciseId: selectedId,
-                  isDuration: selectedDetail.isDuration,
+                  isDuration:
+                      selectedDetail.isDuration || selectedDetail.isCardio,
                   metric: _metric,
                   onMetricChanged: (m) => setState(() => _metric = m)),
             ],

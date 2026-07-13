@@ -172,7 +172,8 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
             PrHighlight(
               exerciseId: row.read<int>('id'),
               exerciseName: row.read<String>('name'),
-              isDuration: row.read<String>('type') == ExerciseTypes.duration,
+              // Durée et cardio : le record pertinent est la durée max.
+              isDuration: row.read<String>('type') != ExerciseTypes.reps,
               maxWeightKg: row.read<double?>('max_weight') ?? 0,
               maxOneRm: row.read<double?>('max_one_rm') ?? 0,
               maxDurationSeconds: row.read<int?>('max_duration') ?? 0,
@@ -289,6 +290,7 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
             sessionId: sessionId,
             exerciseId: exercise.exerciseId,
             position: i,
+            notes: Value(exercise.notes),
           ),
         );
         for (var s = 0; s < exercise.sets.length; s++) {
@@ -301,6 +303,7 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
             rpe: Value(set.rpe),
             restTakenSeconds: Value(set.restTakenSeconds),
             durationSeconds: Value(set.durationSeconds),
+            distanceMeters: Value(set.distanceMeters),
           ));
         }
       }
@@ -381,6 +384,7 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
         sessionExerciseId: sessionExercise.id,
         exercise: exercise,
         sets: sets,
+        notes: sessionExercise.notes,
       ));
     }
     return SessionDetail(session: session, exercises: details);
@@ -407,6 +411,24 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
           ..where((s) => s.sessionExerciseId.equals(sessionExercise.id))
           ..orderBy([(s) => OrderingTerm.asc(s.setNumber)]))
         .get();
+  }
+
+  /// Dernière note laissée sur cet exercice (rappel des réglages machine
+  /// à la séance suivante).
+  Future<String> lastNoteForExercise(int exerciseId) async {
+    final row = await customSelect(
+      '''
+      SELECT se.notes AS notes
+      FROM session_exercises se
+      INNER JOIN workout_sessions w ON w.id = se.session_id
+      WHERE se.exercise_id = ? AND se.notes != ''
+      ORDER BY w.date DESC, se.id DESC
+      LIMIT 1
+      ''',
+      variables: [Variable.withInt(exerciseId)],
+      readsFrom: {sessionExercises, workoutSessions},
+    ).getSingleOrNull();
+    return row?.read<String>('notes') ?? '';
   }
 
   /// Historique des séries d'un exercice, groupées par séance et triées

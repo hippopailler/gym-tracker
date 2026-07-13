@@ -18,4 +18,7 @@ class ExerciseDetail {
 
   /// Vrai si l'exercice est mesuré en secondes (planche…).
   bool get isDuration => exercise.exerciseType == ExerciseTypes.duration;
+
+  /// Vrai pour les exercices cardio (durée + distance).
+  bool get isCardio => exercise.exerciseType == ExerciseTypes.cardio;
 }

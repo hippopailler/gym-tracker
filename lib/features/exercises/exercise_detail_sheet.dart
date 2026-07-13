@@ -70,7 +70,7 @@ class _ExerciseDetailSheet extends ConsumerWidget {
               error: (error, _) => Text('Erreur : $error'),
               data: (records) => _RecordsTable(
                 records: records,
-                isDuration: detail.isDuration,
+                isDuration: detail.isDuration || detail.isCardio,
               ),
             ),
           ],

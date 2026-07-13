@@ -116,6 +116,18 @@ class _SessionDetailSheet extends ConsumerWidget {
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w800),
                   ),
+                  if (exercise.notes.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '📝 ${exercise.notes}',
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   for (final set in exercise.sets)
                     Padding(
@@ -133,7 +145,10 @@ class _SessionDetailSheet extends ConsumerWidget {
                           ),
                           Text(
                             set.durationSeconds != null
-                                ? formatTimer(set.durationSeconds!)
+                                ? formatTimer(set.durationSeconds!) +
+                                    (set.distanceMeters != null
+                                        ? ' · ${formatDistance(set.distanceMeters!)}'
+                                        : '')
                                 : '${formatKg(set.weightKg)} × ${set.reps}',
                             style: numberStyle(context, size: 15,
                                 weight: FontWeight.w700),

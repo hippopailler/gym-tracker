@@ -21,6 +21,9 @@ class SessionRepository {
   Future<List<SetEntry>> lastSetsForExercise(int exerciseId) =>
       _db.sessionDao.lastSetsForExercise(exerciseId);
 
+  Future<String> lastNoteForExercise(int exerciseId) =>
+      _db.sessionDao.lastNoteForExercise(exerciseId);
+
   Future<PersonalBests> personalBests(int exerciseId) =>
       _db.sessionDao.personalBests(exerciseId);
 

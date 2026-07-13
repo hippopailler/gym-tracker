@@ -16,9 +16,11 @@ class SetRow extends StatefulWidget {
     required this.setNumber,
     required this.set,
     required this.isDuration,
+    this.isCardio = false,
     required this.weightHint,
     required this.repsHint,
     required this.durationHint,
+    this.distanceHint,
     required this.lastPerformance,
     required this.onValidate,
     required this.onReopen,
@@ -28,16 +30,20 @@ class SetRow extends StatefulWidget {
   final int setNumber;
   final ActiveSet set;
   final bool isDuration;
+
+  /// Exercice cardio : saisie durée (minutes) + distance (mètres).
+  final bool isCardio;
   final double? weightHint;
   final int? repsHint;
   final int? durationHint;
+  final double? distanceHint;
 
   /// Performance de la même série lors de la dernière séance — alimente le
   /// bouton « comme la dernière fois ».
   final LastSetData? lastPerformance;
 
-  final void Function(double weightKg, int reps, int? durationSeconds)
-      onValidate;
+  final void Function(double weightKg, int reps, int? durationSeconds,
+      double? distanceMeters) onValidate;
   final VoidCallback onReopen;
 
   /// Lance le chrono d'exécution pour un exercice en durée (secondes de la
@@ -52,6 +58,8 @@ class _SetRowState extends State<SetRow> {
   late final TextEditingController _weightController;
   late final TextEditingController _repsController;
   late final TextEditingController _durationController;
+  late final TextEditingController _minutesController;
+  late final TextEditingController _distanceController;
 
   @override
   void initState() {
@@ -67,6 +75,16 @@ class _SetRowState extends State<SetRow> {
     _durationController = TextEditingController(
       text: widget.set.durationSeconds?.toString() ?? '',
     );
+    _minutesController = TextEditingController(
+      text: widget.set.durationSeconds == null
+          ? ''
+          : _trimNumber(widget.set.durationSeconds! / 60),
+    );
+    _distanceController = TextEditingController(
+      text: widget.set.distanceMeters == null
+          ? ''
+          : _trimNumber(widget.set.distanceMeters!),
+    );
   }
 
   @override
@@ -74,6 +92,8 @@ class _SetRowState extends State<SetRow> {
     _weightController.dispose();
     _repsController.dispose();
     _durationController.dispose();
+    _minutesController.dispose();
+    _distanceController.dispose();
     super.dispose();
   }
 
@@ -90,7 +110,28 @@ class _SetRowState extends State<SetRow> {
 
   int? _parseDuration() => int.tryParse(_durationController.text.trim());
 
+  /// Durée cardio saisie en minutes (décimales acceptées) → secondes.
+  int? _parseMinutes() {
+    final minutes =
+        double.tryParse(_minutesController.text.trim().replaceAll(',', '.'));
+    if (minutes == null || minutes <= 0) return null;
+    return (minutes * 60).round();
+  }
+
+  double? _parseDistance() =>
+      double.tryParse(_distanceController.text.trim().replaceAll(',', '.'));
+
   void _validate() {
+    if (widget.isCardio) {
+      final duration = _parseMinutes();
+      if (duration == null) {
+        _showError('Saisis une durée en minutes');
+        return;
+      }
+      FocusScope.of(context).unfocus();
+      widget.onValidate(0, 0, duration, _parseDistance());
+      return;
+    }
     if (widget.isDuration) {
       final duration = _parseDuration();
       if (duration == null || duration <= 0) {
@@ -98,7 +139,7 @@ class _SetRowState extends State<SetRow> {
         return;
       }
       FocusScope.of(context).unfocus();
-      widget.onValidate(0, 0, duration);
+      widget.onValidate(0, 0, duration, null);
       return;
     }
     final weight = _parseWeight();
@@ -108,30 +149,38 @@ class _SetRowState extends State<SetRow> {
       return;
     }
     FocusScope.of(context).unfocus();
-    widget.onValidate(weight, reps, null);
+    widget.onValidate(weight, reps, null, null);
   }
 
   /// Reprend la dernière performance (même série de la dernière séance,
   /// sinon valeurs suggérées) et valide directement.
   void _repeatLast() {
     final last = widget.lastPerformance;
+    if (widget.isCardio) {
+      final duration = last?.durationSeconds ?? widget.durationHint;
+      if (duration == null || duration <= 0) return;
+      FocusScope.of(context).unfocus();
+      widget.onValidate(0, 0, duration,
+          last?.distanceMeters ?? widget.distanceHint);
+      return;
+    }
     if (widget.isDuration) {
       final duration = last?.durationSeconds ?? widget.durationHint;
       if (duration == null || duration <= 0) return;
       FocusScope.of(context).unfocus();
-      widget.onValidate(0, 0, duration);
+      widget.onValidate(0, 0, duration, null);
       return;
     }
     final weight = last?.weightKg ?? widget.weightHint;
     final reps = last?.reps ?? widget.repsHint;
     if (weight == null || reps == null || reps <= 0) return;
     FocusScope.of(context).unfocus();
-    widget.onValidate(weight, reps, null);
+    widget.onValidate(weight, reps, null, null);
   }
 
   bool get _canRepeatLast {
     final last = widget.lastPerformance;
-    if (widget.isDuration) {
+    if (widget.isDuration || widget.isCardio) {
       return (last?.durationSeconds ?? widget.durationHint ?? 0) > 0;
     }
     return (last?.weightKg ?? widget.weightHint) != null &&
@@ -173,7 +222,21 @@ class _SetRowState extends State<SetRow> {
             children: [
               _SetBadge(number: widget.setNumber, done: true),
               const SizedBox(width: 12),
-              if (widget.isDuration) ...[
+              if (widget.isCardio) ...[
+                Text(
+                  formatTimer(widget.set.durationSeconds ?? 0),
+                  style: numberStyle(context, size: 18),
+                ),
+                if (widget.set.distanceMeters != null) ...[
+                  const SizedBox(width: 8),
+                  Text('·', style: TextStyle(color: scheme.onSurfaceVariant)),
+                  const SizedBox(width: 8),
+                  Text(
+                    formatDistance(widget.set.distanceMeters!),
+                    style: numberStyle(context, size: 18),
+                  ),
+                ],
+              ] else if (widget.isDuration) ...[
                 Text(
                   formatTimer(widget.set.durationSeconds ?? 0),
                   style: numberStyle(context, size: 18),
@@ -211,7 +274,51 @@ class _SetRowState extends State<SetRow> {
         children: [
           _SetBadge(number: widget.setNumber, done: false),
           const SizedBox(width: 12),
-          if (widget.isDuration)
+          if (widget.isCardio) ...[
+            Expanded(
+              flex: 2,
+              child: TextField(
+                controller: _minutesController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                ],
+                textAlign: TextAlign.center,
+                style:
+                    numberStyle(context, size: 16, weight: FontWeight.w700),
+                decoration: InputDecoration(
+                  hintText: widget.durationHint == null
+                      ? 'min'
+                      : _trimNumber(widget.durationHint! / 60),
+                  suffixText: 'min',
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: TextField(
+                controller: _distanceController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                ],
+                textAlign: TextAlign.center,
+                style:
+                    numberStyle(context, size: 16, weight: FontWeight.w700),
+                decoration: InputDecoration(
+                  hintText: widget.distanceHint == null
+                      ? 'distance'
+                      : _trimNumber(widget.distanceHint!),
+                  suffixText: 'm',
+                  isDense: true,
+                ),
+              ),
+            ),
+          ] else if (widget.isDuration)
             Expanded(
               child: TextField(
                 controller: _durationController,

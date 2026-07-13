@@ -288,7 +288,7 @@ class _ExerciseCard extends ConsumerWidget {
   final VoidCallback onEditRest;
 
   void _validate(BuildContext context, WidgetRef ref, int setIndex,
-      double weight, int reps, int? duration) {
+      double weight, int reps, int? duration, double? distance) {
     final celebration =
         ref.read(activeSessionProvider.notifier).validateSet(
               exerciseIndex,
@@ -296,10 +296,49 @@ class _ExerciseCard extends ConsumerWidget {
               weightKg: weight,
               reps: reps,
               durationSeconds: duration,
+              distanceMeters: distance,
             );
     if (celebration != null) {
       showPrCelebration(context, celebration);
     }
+  }
+
+  /// Note discrète sur l'exercice (réglages machine, sensations…),
+  /// pré-remplie avec la note en cours, sinon celle de la dernière séance.
+  Future<void> _editNote(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(
+        text: exercise.note.isNotEmpty ? exercise.note : exercise.lastNote);
+    final note = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(exercise.exercise.name),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Réglages machine, sensations…',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    if (note != null) {
+      ref
+          .read(activeSessionProvider.notifier)
+          .setExerciseNote(exerciseIndex, note);
+    }
+    controller.dispose();
   }
 
   @override
@@ -308,6 +347,7 @@ class _ExerciseCard extends ConsumerWidget {
     final controller = ref.read(activeSessionProvider.notifier);
     final suggestion = exercise.suggestion;
     final isDuration = exercise.isDuration;
+    final isCardio = exercise.isCardio;
 
     // Valeurs proposées dans les champs : dernière série validée,
     // sinon la suggestion de progression.
@@ -321,6 +361,9 @@ class _ExerciseCard extends ConsumerWidget {
         (suggestion != null && suggestion.isDuration
             ? suggestion.durationSeconds
             : exercise.targetReps);
+    final distanceHint = lastDone?.distanceMeters;
+    final noteToShow =
+        exercise.note.isNotEmpty ? exercise.note : exercise.lastNote;
 
     return Card(
       child: Padding(
@@ -341,14 +384,30 @@ class _ExerciseCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${exercise.detail.muscleLabel} · '
-                        'objectif ${exercise.targetSets} × ${exercise.targetReps}'
-                        '${isDuration ? ' s' : ''}',
+                        isCardio
+                            ? exercise.detail.muscleLabel
+                            : '${exercise.detail.muscleLabel} · '
+                                'objectif ${exercise.targetSets} × ${exercise.targetReps}'
+                                '${isDuration ? ' s' : ''}',
                         style: TextStyle(
                             color: scheme.onSurfaceVariant, fontSize: 13),
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  onPressed: () => _editNote(context, ref),
+                  icon: Icon(
+                    exercise.note.isNotEmpty
+                        ? Icons.sticky_note_2
+                        : Icons.sticky_note_2_outlined,
+                    size: 20,
+                    color: exercise.note.isNotEmpty
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant,
+                  ),
+                  tooltip: 'Note de l\'exercice',
+                  visualDensity: VisualDensity.compact,
                 ),
                 ActionChip(
                   avatar: Icon(Icons.timer_outlined,
@@ -372,6 +431,22 @@ class _ExerciseCard extends ConsumerWidget {
                 ),
               ],
             ),
+            if (noteToShow.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  exercise.note.isNotEmpty
+                      ? '📝 $noteToShow'
+                      : '📝 Dernière fois : $noteToShow',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             if (suggestion != null) ...[
               const SizedBox(height: 8),
               Container(
@@ -418,13 +493,16 @@ class _ExerciseCard extends ConsumerWidget {
                 setNumber: s + 1,
                 set: exercise.sets[s],
                 isDuration: isDuration,
+                isCardio: isCardio,
                 weightHint: exercise.lastSetFor(s)?.weightKg ?? weightHint,
                 repsHint: exercise.lastSetFor(s)?.reps ?? repsHint,
                 durationHint:
                     exercise.lastSetFor(s)?.durationSeconds ?? durationHint,
+                distanceHint:
+                    exercise.lastSetFor(s)?.distanceMeters ?? distanceHint,
                 lastPerformance: exercise.lastSetFor(s),
-                onValidate: (weight, reps, duration) =>
-                    _validate(context, ref, s, weight, reps, duration),
+                onValidate: (weight, reps, duration, distance) => _validate(
+                    context, ref, s, weight, reps, duration, distance),
                 onReopen: () => controller.reopenSet(exerciseIndex, s),
                 onStartTimer: isDuration
                     ? (seconds) =>

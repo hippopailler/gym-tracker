@@ -119,7 +119,7 @@ class _SessionEditScreenState extends ConsumerState<SessionEditScreen> {
     final addedExercises = <CompletedExerciseDraft>[];
     for (final exercise in _exercises) {
       final isDuration =
-          exercise.exercise.exerciseType == ExerciseTypes.duration;
+          exercise.exercise.exerciseType != ExerciseTypes.reps;
       final newExerciseSets = <CompletedSetDraft>[];
       for (final set in exercise.sets) {
         final weight = double.tryParse(
@@ -321,8 +321,10 @@ class _SessionEditScreenState extends ConsumerState<SessionEditScreen> {
   Widget _buildSetRow(
       _EditableExercise exercise, int setIndex, ColorScheme scheme) {
     final set = exercise.sets[setIndex];
+    // Les exercices en durée et cardio s'éditent en secondes (la distance
+    // cardio, non éditable ici, est conservée telle quelle).
     final isDuration =
-        exercise.exercise.exerciseType == ExerciseTypes.duration;
+        exercise.exercise.exerciseType != ExerciseTypes.reps;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(

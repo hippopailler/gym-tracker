@@ -9,6 +9,11 @@ String formatKg(double value) => '${_kgFormat.format(value)} kg';
 /// « 1 240 kg » pour les gros volumes.
 String formatVolume(double value) => '${_intFormat.format(value)} kg';
 
+/// « 2 500 m » ou « 12,3 km » pour les distances cardio.
+String formatDistance(double meters) => meters >= 10000
+    ? '${_kgFormat.format(meters / 1000)} km'
+    : '${_intFormat.format(meters)} m';
+
 /// « 02:15 » pour le chrono de repos.
 String formatTimer(int seconds) {
   final m = (seconds ~/ 60).toString().padLeft(2, '0');

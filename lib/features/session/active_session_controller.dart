@@ -98,10 +98,15 @@ class ActiveSessionController extends StateNotifier<ActiveSessionState?> {
     final progression = _ref.read(progressionServiceProvider);
     final lastSets = await repo.lastSetsForExercise(detail.exercise.id);
     final bests = await repo.personalBests(detail.exercise.id);
-    final suggestion = detail.isDuration
-        ? progression.suggestDuration(
-            lastSets: lastSets, targetSeconds: targetReps)
-        : progression.suggest(lastSets: lastSets, targetReps: targetReps);
+    final lastNote = await repo.lastNoteForExercise(detail.exercise.id);
+    // Pas de suggestion de progression pour le cardio : on repart de la
+    // dernière performance.
+    final suggestion = detail.isCardio
+        ? null
+        : detail.isDuration
+            ? progression.suggestDuration(
+                lastSets: lastSets, targetSeconds: targetReps)
+            : progression.suggest(lastSets: lastSets, targetReps: targetReps);
     return ActiveExercise(
       detail: detail,
       targetSets: targetSets,
@@ -109,16 +114,25 @@ class ActiveSessionController extends StateNotifier<ActiveSessionState?> {
       restSeconds: restSeconds,
       suggestion: suggestion,
       bests: bests,
+      lastNote: lastNote,
       lastSets: [
         for (final set in lastSets)
           LastSetData(
             weightKg: set.weightKg,
             reps: set.reps,
             durationSeconds: set.durationSeconds,
+            distanceMeters: set.distanceMeters,
           ),
       ],
       sets: List.generate(targetSets, (_) => const ActiveSet()),
     );
+  }
+
+  /// Note libre sur un exercice de la séance (réglages machine…).
+  void setExerciseNote(int exerciseIndex, String note) {
+    _updateExercise(
+        exerciseIndex, (exercise) => exercise.copyWith(note: note.trim()));
+    _persist();
   }
 
   /// Ajoute un exercice à la volée (séance libre ou complément).
@@ -130,8 +144,12 @@ class ActiveSessionController extends StateNotifier<ActiveSessionState?> {
     }
     final added = await _buildExercise(
       detail: detail,
-      targetSets: 3,
-      targetReps: detail.isDuration ? 30 : 10,
+      targetSets: detail.isCardio ? 1 : 3,
+      targetReps: detail.isCardio
+          ? 600
+          : detail.isDuration
+              ? 30
+              : 10,
       restSeconds: detail.exercise.defaultRestSeconds,
     );
     state = current.copyWith(exercises: [...current.exercises, added]);
@@ -170,6 +188,7 @@ class ActiveSessionController extends StateNotifier<ActiveSessionState?> {
     required double weightKg,
     required int reps,
     int? durationSeconds,
+    double? distanceMeters,
     double? rpe,
   }) {
     final current = state;
@@ -195,6 +214,7 @@ class ActiveSessionController extends StateNotifier<ActiveSessionState?> {
         reps: reps,
         rpe: rpe,
         durationSeconds: durationSeconds,
+        distanceMeters: distanceMeters,
         isDone: true,
       ),
     );

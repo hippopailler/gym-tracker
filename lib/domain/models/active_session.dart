@@ -12,6 +12,7 @@ class ActiveSet {
     this.isDone = false,
     this.restTakenSeconds,
     this.durationSeconds,
+    this.distanceMeters,
   });
 
   final double? weightKg;
@@ -23,6 +24,9 @@ class ActiveSet {
   /// Pour les exercices mesurés en secondes.
   final int? durationSeconds;
 
+  /// Pour les exercices cardio.
+  final double? distanceMeters;
+
   ActiveSet copyWith({
     double? weightKg,
     int? reps,
@@ -30,6 +34,7 @@ class ActiveSet {
     bool? isDone,
     int? restTakenSeconds,
     int? durationSeconds,
+    double? distanceMeters,
   }) {
     return ActiveSet(
       weightKg: weightKg ?? this.weightKg,
@@ -38,6 +43,7 @@ class ActiveSet {
       isDone: isDone ?? this.isDone,
       restTakenSeconds: restTakenSeconds ?? this.restTakenSeconds,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
     );
   }
 
@@ -46,6 +52,7 @@ class ActiveSet {
         reps: reps,
         rpe: rpe,
         durationSeconds: durationSeconds,
+        distanceMeters: distanceMeters,
         isDone: false,
       );
 
@@ -56,6 +63,7 @@ class ActiveSet {
         'isDone': isDone,
         'restTakenSeconds': restTakenSeconds,
         'durationSeconds': durationSeconds,
+        'distanceMeters': distanceMeters,
       };
 
   static ActiveSet fromJson(Map<String, dynamic> json) {
@@ -66,6 +74,7 @@ class ActiveSet {
       isDone: json['isDone'] as bool? ?? false,
       restTakenSeconds: json['restTakenSeconds'] as int?,
       durationSeconds: json['durationSeconds'] as int?,
+      distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
     );
   }
 }
@@ -77,16 +86,19 @@ class LastSetData {
     required this.weightKg,
     required this.reps,
     this.durationSeconds,
+    this.distanceMeters,
   });
 
   final double weightKg;
   final int reps;
   final int? durationSeconds;
+  final double? distanceMeters;
 
   Map<String, dynamic> toJson() => {
         'weightKg': weightKg,
         'reps': reps,
         'durationSeconds': durationSeconds,
+        'distanceMeters': distanceMeters,
       };
 
   static LastSetData fromJson(Map<String, dynamic> json) {
@@ -94,6 +106,7 @@ class LastSetData {
       weightKg: (json['weightKg'] as num).toDouble(),
       reps: json['reps'] as int,
       durationSeconds: json['durationSeconds'] as int?,
+      distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
     );
   }
 }
@@ -109,6 +122,8 @@ class ActiveExercise {
     this.suggestion,
     this.lastSets = const [],
     this.bests = const PersonalBests(),
+    this.note = '',
+    this.lastNote = '',
   });
 
   final ExerciseDetail detail;
@@ -127,9 +142,17 @@ class ActiveExercise {
 
   final List<ActiveSet> sets;
 
+  /// Note libre de la séance en cours (réglages machine, sensations…).
+  final String note;
+
+  /// Note laissée sur cet exercice à la dernière séance (rappel discret).
+  final String lastNote;
+
   Exercise get exercise => detail.exercise;
 
   bool get isDuration => detail.isDuration;
+
+  bool get isCardio => detail.isCardio;
 
   int get doneSetCount => sets.where((s) => s.isDone).length;
 
@@ -143,6 +166,7 @@ class ActiveExercise {
     int? restSeconds,
     List<ActiveSet>? sets,
     PersonalBests? bests,
+    String? note,
   }) {
     return ActiveExercise(
       detail: detail,
@@ -153,6 +177,8 @@ class ActiveExercise {
       lastSets: lastSets,
       bests: bests ?? this.bests,
       sets: sets ?? this.sets,
+      note: note ?? this.note,
+      lastNote: lastNote,
     );
   }
 
@@ -165,6 +191,8 @@ class ActiveExercise {
         'lastSets': [for (final s in lastSets) s.toJson()],
         'bests': bests.toJson(),
         'sets': [for (final s in sets) s.toJson()],
+        'note': note,
+        'lastNote': lastNote,
       };
 
   static ActiveExercise fromJson(
@@ -190,6 +218,8 @@ class ActiveExercise {
         for (final s in (json['sets'] as List))
           ActiveSet.fromJson((s as Map).cast<String, dynamic>()),
       ],
+      note: json['note'] as String? ?? '',
+      lastNote: json['lastNote'] as String? ?? '',
     );
   }
 }
@@ -271,6 +301,7 @@ class ActiveSessionState {
           if (exercise.sets.any((s) => s.isDone))
             CompletedExerciseDraft(
               exerciseId: exercise.exercise.id,
+              notes: exercise.note,
               sets: [
                 for (final set in exercise.sets)
                   if (set.isDone)
@@ -280,6 +311,7 @@ class ActiveSessionState {
                       rpe: set.rpe,
                       restTakenSeconds: set.restTakenSeconds,
                       durationSeconds: set.durationSeconds,
+                      distanceMeters: set.distanceMeters,
                     ),
               ],
             ),

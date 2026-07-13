@@ -23,11 +23,15 @@ class SessionExerciseDetail {
     required this.sessionExerciseId,
     required this.exercise,
     required this.sets,
+    this.notes = '',
   });
 
   final int sessionExerciseId;
   final Exercise exercise;
   final List<SetEntry> sets;
+
+  /// Note laissée sur l'exercice pendant la séance.
+  final String notes;
 }
 
 /// Détail complet d'une séance passée.
@@ -58,10 +62,15 @@ class CompletedSessionDraft {
 }
 
 class CompletedExerciseDraft {
-  const CompletedExerciseDraft({required this.exerciseId, required this.sets});
+  const CompletedExerciseDraft({
+    required this.exerciseId,
+    required this.sets,
+    this.notes = '',
+  });
 
   final int exerciseId;
   final List<CompletedSetDraft> sets;
+  final String notes;
 }
 
 class CompletedSetDraft {
@@ -71,6 +80,7 @@ class CompletedSetDraft {
     this.rpe,
     this.restTakenSeconds,
     this.durationSeconds,
+    this.distanceMeters,
   });
 
   final double weightKg;
@@ -78,6 +88,7 @@ class CompletedSetDraft {
   final double? rpe;
   final int? restTakenSeconds;
   final int? durationSeconds;
+  final double? distanceMeters;
 }
 
 /// Série ajoutée à un exercice existant depuis l'éditeur de séance passée.

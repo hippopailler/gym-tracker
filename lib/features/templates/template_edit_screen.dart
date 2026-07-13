@@ -279,9 +279,13 @@ class _ExerciseEditTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       _NumberField(
-                        label: item.detail.isDuration ? 'Sec.' : 'Reps',
+                        label: item.detail.isDuration || item.detail.isCardio
+                            ? 'Sec.'
+                            : 'Reps',
                         value: item.targetReps,
-                        maxValue: item.detail.isDuration ? 900 : 99,
+                        maxValue: item.detail.isDuration || item.detail.isCardio
+                            ? 7200
+                            : 99,
                         onChanged: (value) {
                           item.targetReps = value;
                           onChanged();
