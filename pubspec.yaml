@@ -1,0 +1,44 @@
+name: gym
+description: Suivi de musculation — templates, séances, chrono de repos, progression.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.0
+  drift: ^2.34.1
+  drift_flutter: ^0.3.1
+  flutter_local_notifications: ^17.2.4
+  timezone: ^0.9.4
+  fl_chart: ^0.69.2
+  table_calendar: ^3.1.3
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.34.3
+  build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+
+# Icône de l'application (sources générées par tool/generate_icons_test.dart,
+# puis : dart run flutter_launcher_icons)
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0F1115"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/icon_monochrome.png"
