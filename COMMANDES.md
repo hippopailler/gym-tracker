@@ -94,14 +94,15 @@ Règle d'or apprise à la dure : `m.alterTable(...)` recrée la table selon le s
 - [x] Ajout d'une série/exercice à une séance passée depuis l'éditeur — *fait le 12/07/2026*
 - [x] Chrono d'exécution pour les exercices en durée (▶ par série, validation auto) — *fait le 12/07/2026*
 - [x] Icône d'application personnalisée (haltère orange, adaptive icon) — *fait le 12/07/2026*
-- [ ] Notes par exercice pendant la séance (réglages machine, sensations) --> il faut que ça soit discret pour ne pas surcharger l'application car on veut garder ce rendu simple.
+- [x] Notes par exercice pendant la séance (icône 📝 discrète, rappel de la note précédente) — *fait le 13/07/2026*
+- [x] Ajouter plusieurs exercices d'un coup (picker multi-sélection, templates + séance) — *fait le 13/07/2026*
+- [x] Modifier/supprimer les exercices créés (menu ⋮ dans la liste d'un groupe) — *fait le 13/07/2026*
+- [x] Thème de couleurs au choix : orange, violet, vert, bleu (bouton 🎨 sur l'accueil) — *fait le 13/07/2026*
+- [x] Exercices street workout (Muscle-up, Pistol squat, Front lever, L-sit…) — *fait le 13/07/2026*
+- [x] Exercices cardio durée + distance : Rameur, Skieur, Course — *fait le 13/07/2026*
+- [x] Import de l'historique papier (56 séances, 16/03 → 08/07/2026) + templates des séances types — *fait le 13/07/2026*
 - [ ] Saisie du RPE par série (la colonne existe déjà en base)
 - [ ] Écran de démarrage : reprendre le dernier template utilisé en un tap
-- Pouvoir ajouter plusieurs exercices d'un coup en créant une template
-- pouvoir modifier/supprimer des exercices surtout ceux crées
-- Pouvoir choisir le thème de couleurs dans l'application : on a actuellement un orange, on aimerait ajouter un thème violet, vert et bleu avec un bouton dans l'app pour choisir 
-- Ajouter des exercices street workout
-- ajouter des exercices cardio basée sur le temps et la distance : rameur, skieur, course
 
 ### Moyen terme
 - [ ] **Programme hebdomadaire** : planifier Push lundi / Pull mercredi… l'accueil propose la séance du jour

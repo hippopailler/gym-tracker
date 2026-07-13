@@ -1,11 +1,12 @@
 # Gym Tracker — Journal d'avancement
 
-> Trace de tout ce qui a été construit, décidé et appris. Dernière mise à jour : **12 juillet 2026**.
+> Trace de tout ce qui a été construit, décidé et appris. Dernière mise à jour : **13 juillet 2026**.
 
 ## L'application aujourd'hui
 
 App Android de suivi de musculation, 100 % locale (SQLite, aucun backend), en français,
-Material 3 sombre par défaut (accent orange) avec thème clair basculable.
+Material 3 sombre par défaut avec thème clair basculable et **4 couleurs d'accent au
+choix** (orange, violet, vert, bleu — persistées en base, sélecteur sur l'accueil).
 
 **5 onglets** : Accueil · Templates · Exercices · Calendrier · Progression.
 
@@ -25,29 +26,39 @@ Material 3 sombre par défaut (accent orange) avec thème clair basculable.
 | Édition d'historique | ✏️ corriger une séance passée (nom, notes, valeurs des séries, supprimer séries/exercices, **ajouter des séries et des exercices oubliés**) · 🗑️ supprimer une séance |
 | Records personnels | Carte « 🏆 Tes records » sur l'accueil (1-2 PR, rotation quotidienne déterministe, jamais surchargée) · fiche exercice (tap dans la liste d'un groupe) avec tableau des PR datés : poids max × reps, 1RM estimé, volume record, durée max, nb de séances |
 | Icône | Icône haltère orange sur fond sombre (adaptive icon + monochrome Android 13), générée par `tool/generate_icons_test.dart` + flutter_launcher_icons |
-| Progression | Sélecteur groupé par muscle (chips + dropdown), graphique fl_chart : poids max / volume / 1RM estimé — ou durée max / durée totale pour les exercices en durée. Tuiles record / 1RM / dernier volume |
+| Progression | Sélecteur groupé par muscle (chips + dropdown), graphique fl_chart : poids max / volume / 1RM estimé — ou durée max / durée totale pour les exercices en durée et cardio. Tuiles record / 1RM / dernier volume |
+| Historique importé | **56 séances (16/03 → 08/07/2026)** transcrites des notes personnelles (mind map par exercice) et importées une seule fois en base (drapeau `history_imported`). Données dans `lib/data/database/history_data.dart` avec les conventions de lecture documentées |
+| Templates réels | 6 templates issus des séances types de l'historique : Pecs, Épaules machine, Triceps, Dos, Biceps, Bas du corps (en plus des 5 génériques, supprimables dans l'app) |
+| Notes par exercice | Icône 📝 discrète sur chaque carte d'exercice en séance (réglages machine, sensations). La note de la **dernière séance** est rappelée en italique. Persistée (`session_exercises.notes`), visible dans le détail d'une séance passée |
+| Cardio | Type d'exercice `cardio` (durée + distance) : Rameur, Skieur, Course au catalogue + groupe « Cardio ». Saisie minutes (décimales) + distance en m, records en durée, pas de suggestion de progression |
+| Catalogue v4 | +27 exercices : machines/poulies de la salle (Chest press, Papillons, Shoulder press, Curl pupitre, Hack squat…), street workout (Muscle-up, Pistol squat, Front lever, L-sit…), cardio |
+| Exercices perso | Édition complète (nom, équipement, groupes, type, repos) via le menu ⋮ dans la liste d'un groupe, en plus de la suppression |
+| Multi-sélection | Le picker d'exercices propose un mode multi (cocher puis « Ajouter n exercice(s) ») utilisé par l'éditeur de template et la séance active ; les exercices déjà présents sont grisés |
+| Thème | 4 accents (orange/violet/vert/bleu) + mode sombre/clair, persistés dans `app_settings`, sélecteur 🎨 sur l'accueil |
 
 ### Architecture (lib/)
 
 - `core/` — thème, formats FR, router (StatefulShellRoute 5 onglets + routes plein écran `/session`, `/history/edit/:id`), providers Riverpod centraux
 - `tool/generate_icons_test.dart` — générateur des sources d'icône (assets/icon/), puis `dart run flutter_launcher_icons`
-- `data/database/` — `tables.dart` (8 tables), `database.dart` (migrations + seed), `seed_data.dart` (catalogue + templates), 3 DAOs
+- `data/database/` — `tables.dart` (9 tables), `database.dart` (migrations + seed + réglages), `seed_data.dart` (catalogue + templates), `history_data.dart` (historique transcrit des notes + parseur), 3 DAOs
 - `data/repositories/` — exercise / template / session
 - `domain/models/` — ExerciseDetail, TemplateWithExercises, SessionDetail/Summary, ActiveSessionState (JSON-sérialisable), PersonalBests, muscle_groups (catalogue slugs+icônes)
 - `domain/services/` — ProgressionService (suggestions, Epley, volume), RestTimerController (basé heure de fin absolue), NotificationService
 - `features/` — home, templates, exercises, session, calendar (+ session_edit_screen), progress
 - `widgets/` — set_row, rest_timer_bar, exercise_picker_sheet, stat_tile, empty_state
 
-### Base de données — schéma v3
+### Base de données — schéma v4
 
-Tables : `exercises` (+ `is_custom`, `exercise_type` reps|duration), `exercise_muscles` (n-n, PK composite),
-`workout_templates`, `template_exercises`, `workout_sessions`, `session_exercises`,
-`set_entries` (+ `duration_seconds`), `active_session_drafts` (1 ligne JSON).
+Tables : `exercises` (+ `is_custom`, `exercise_type` reps|duration|cardio), `exercise_muscles` (n-n, PK composite),
+`workout_templates`, `template_exercises`, `workout_sessions`, `session_exercises` (+ `notes`),
+`set_entries` (+ `duration_seconds`, `distance_meters`), `active_session_drafts` (1 ligne JSON),
+`app_settings` (clé → valeur : thème, drapeau d'import).
 FK avec `ON DELETE CASCADE` partout où pertinent. Fichier : `app_flutter/gym_tracker.sqlite`.
 
 Historique des migrations (toutes **idempotentes**, testées) :
 - **v1 → v2** : `muscle_group` (colonne unique) → table n-n `exercise_muscles`, catalogue 10 → 32 exercices, ids historiques conservés
 - **v2 → v3** : `exercise_type`, `duration_seconds`, `active_session_drafts`, Planche convertie en durée
+- **v3 → v4** : `app_settings`, `session_exercises.notes`, `set_entries.distance_meters`, catalogue +27 (machines, street workout, cardio), 6 templates réels, **import unique de l'historique transcrit** (56 séances)
 
 ## Leçons apprises (pièges à ne pas re-payer)
 
@@ -75,16 +86,21 @@ Historique des migrations (toutes **idempotentes**, testées) :
   pour l'app dans les paramètres Android (sinon repli inexact, ~1 min de retard)
 - **Clé de signature release** : `android/app/upload-keystore.jks` + mots de passe dans `android/key.properties`
   (exclus de git) — **à sauvegarder en lieu sûr, irremplaçable**
-- ⚠️ Identifiant d'app encore `com.example.gym` → à renommer définitivement **avant** d'accumuler
-  un vrai historique (le changer = nouvelle app = données à re-migrer)
+- ⚠️ Identifiant d'app encore `com.example.gym` → à renommer définitivement au plus vite
+  (le changer = nouvelle app = données à re-migrer). **L'historique importé est regénérable**
+  (il vit dans le code, `history_data.dart`), mais les séances saisies dans l'app ne le sont pas
+- 📲 Réinstaller l'APK (`flutter build apk --release` + `adb install -r …`) pour récupérer
+  la migration v4 : l'import des 56 séances se fait tout seul au premier lancement
 
 ## Qualité
 
-- `flutter analyze` : 0 problème · **19 tests verts** :
+- `flutter analyze` : 0 problème · **20 tests verts** :
   - progression (suggestions reps + durée, Epley, volume)
-  - base de données (seed, CRUD templates, séances, records, brouillon actif, corrections/suppressions/**ajouts** sur séance passée, records datés + vue d'ensemble, exercice en durée)
-  - **migrations** (v1 → v3 complet + reprise après migration interrompue)
+  - base de données (seed, CRUD templates, séances, records, brouillon actif, corrections/suppressions/**ajouts** sur séance passée, records datés + vue d'ensemble, exercice en durée, **cardio + note d'exercice**)
+  - **migrations** (v1 → v4 complet, avec import de l'historique + reprise après migration interrompue)
   - **navigation** (test widget : abandon de séance vide, remplacement de séance en cours)
+- L'import d'historique ne s'exécute pas dans les bases de test (`AppDatabase.forTesting`,
+  `seedHistory: false` par défaut) — la migration v4, elle, importe toujours
 - Toujours relancer `dart run build_runner build --delete-conflicting-outputs` après modification de `tables.dart`
 - Piège des tests widget avec drift : à la fin du test, démonter l'app (`pumpWidget(SizedBox)` + `pump()`) pour laisser drift fermer ses streams, sinon « A Timer is still pending » aléatoire
 
