@@ -15,6 +15,7 @@ import '../domain/services/progression_service.dart';
 import '../domain/services/rest_timer_controller.dart';
 import '../features/session/active_session_controller.dart';
 import 'formats.dart';
+import 'theme.dart';
 
 // ----- Infrastructure -----
 
@@ -112,5 +113,49 @@ final activeSessionProvider =
 /// célébration, puis le remet à null.
 final prCelebrationProvider = StateProvider<PrCelebration?>((ref) => null);
 
-/// Thème sombre par défaut, basculable depuis l'accueil.
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
+/// Réglages d'apparence : mode sombre/clair et couleur d'accent,
+/// persistés en base (table app_settings).
+class ThemeSettings {
+  const ThemeSettings({required this.mode, required this.accent});
+
+  final ThemeMode mode;
+  final AppAccent accent;
+}
+
+class ThemeSettingsController extends StateNotifier<ThemeSettings> {
+  ThemeSettingsController(this._db)
+      : super(const ThemeSettings(
+            mode: ThemeMode.dark, accent: AppAccent.orange)) {
+    _load();
+  }
+
+  final AppDatabase _db;
+
+  Future<void> _load() async {
+    final mode = await _db.getSetting('theme_mode');
+    final accent = await _db.getSetting('theme_accent');
+    if (!mounted) return;
+    state = ThemeSettings(
+      mode: mode == 'light' ? ThemeMode.light : ThemeMode.dark,
+      accent: AppAccent.fromSlug(accent),
+    );
+  }
+
+  void toggleMode() {
+    final mode =
+        state.mode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    state = ThemeSettings(mode: mode, accent: state.accent);
+    _db.setSetting('theme_mode', mode == ThemeMode.light ? 'light' : 'dark');
+  }
+
+  void setAccent(AppAccent accent) {
+    state = ThemeSettings(mode: state.mode, accent: accent);
+    _db.setSetting('theme_accent', accent.slug);
+  }
+}
+
+/// Thème sombre orange par défaut, réglable depuis l'accueil.
+final themeSettingsProvider =
+    StateNotifierProvider<ThemeSettingsController, ThemeSettings>(
+  (ref) => ThemeSettingsController(ref.watch(databaseProvider)),
+);

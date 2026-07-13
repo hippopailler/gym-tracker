@@ -17,10 +17,36 @@ Future<ExerciseDetail?> showExercisePicker(BuildContext context,
   );
 }
 
+/// Variante multi-sélection : cocher plusieurs exercices puis valider.
+/// Retourne null si la feuille est fermée sans valider.
+Future<List<ExerciseDetail>?> showMultiExercisePicker(BuildContext context,
+    {String? initialGroup, Set<int> alreadyPicked = const {}}) {
+  return showModalBottomSheet<List<ExerciseDetail>>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) => _ExercisePickerSheet(
+      initialGroup: initialGroup,
+      multi: true,
+      alreadyPicked: alreadyPicked,
+    ),
+  );
+}
+
 class _ExercisePickerSheet extends ConsumerStatefulWidget {
-  const _ExercisePickerSheet({this.initialGroup});
+  const _ExercisePickerSheet({
+    this.initialGroup,
+    this.multi = false,
+    this.alreadyPicked = const {},
+  });
 
   final String? initialGroup;
+
+  /// Multi-sélection avec bouton de validation.
+  final bool multi;
+
+  /// Ids déjà présents (grisés en mode multi).
+  final Set<int> alreadyPicked;
 
   @override
   ConsumerState<_ExercisePickerSheet> createState() =>
@@ -30,6 +56,7 @@ class _ExercisePickerSheet extends ConsumerStatefulWidget {
 class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
   String _query = '';
   String? _groupFilter;
+  final Map<int, ExerciseDetail> _selected = {};
 
   @override
   void initState() {
@@ -117,7 +144,11 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final detail = filtered[index];
+                      final id = detail.exercise.id;
+                      final isPicked = widget.alreadyPicked.contains(id);
+                      final isSelected = _selected.containsKey(id);
                       return ListTile(
+                        enabled: !isPicked,
                         title: Row(
                           children: [
                             Flexible(
@@ -134,16 +165,51 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                             ],
                           ],
                         ),
-                        subtitle: Text(
-                            '${detail.exercise.equipment} · ${detail.muscleLabel}'),
-                        trailing: const Icon(Icons.add_circle_outline),
-                        onTap: () => Navigator.of(context).pop(detail),
+                        subtitle: Text(isPicked
+                            ? 'Déjà dans la liste'
+                            : '${detail.exercise.equipment} · ${detail.muscleLabel}'),
+                        trailing: widget.multi
+                            ? Icon(
+                                isSelected
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                color: isSelected ? scheme.primary : null,
+                              )
+                            : const Icon(Icons.add_circle_outline),
+                        onTap: widget.multi
+                            ? () => setState(() {
+                                  if (isSelected) {
+                                    _selected.remove(id);
+                                  } else {
+                                    _selected[id] = detail;
+                                  }
+                                })
+                            : () => Navigator.of(context).pop(detail),
                       );
                     },
                   );
                 },
               ),
             ),
+            if (widget.multi)
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _selected.isEmpty
+                          ? null
+                          : () => Navigator.of(context)
+                              .pop(_selected.values.toList()),
+                      icon: const Icon(Icons.check),
+                      label: Text(_selected.isEmpty
+                          ? 'Sélectionne des exercices'
+                          : 'Ajouter ${_selected.length} exercice(s)'),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },

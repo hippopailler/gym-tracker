@@ -122,6 +122,7 @@ void main() {
     // un Timer(0) (StreamQueryStore.markAsClosed) que l'on laisse se
     // déclencher avant la vérification « aucun timer en attente ».
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
   });
 }

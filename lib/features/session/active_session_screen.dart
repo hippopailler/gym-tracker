@@ -39,9 +39,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   }
 
   Future<void> _addExercise() async {
-    final exercise = await showExercisePicker(context);
-    if (exercise != null) {
-      await ref.read(activeSessionProvider.notifier).addExercise(exercise);
+    final session = ref.read(activeSessionProvider);
+    final picked = await showMultiExercisePicker(
+      context,
+      alreadyPicked: {
+        for (final e in session?.exercises ?? <ActiveExercise>[])
+          e.exercise.id,
+      },
+    );
+    if (picked == null) return;
+    final controller = ref.read(activeSessionProvider.notifier);
+    for (final exercise in picked) {
+      await controller.addExercise(exercise);
     }
   }
 

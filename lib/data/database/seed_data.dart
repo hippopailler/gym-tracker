@@ -10,6 +10,7 @@ class SeedExercise {
     this.restSeconds,
     this.description, {
     this.isDuration = false,
+    this.isCardio = false,
   });
 
   final String name;
@@ -20,6 +21,9 @@ class SeedExercise {
 
   /// Vrai pour les exercices mesurés en secondes (planche…).
   final bool isDuration;
+
+  /// Vrai pour les exercices cardio (durée + distance).
+  final bool isCardio;
 }
 
 const List<SeedExercise> kSeedExercises = [
@@ -99,6 +103,78 @@ const List<SeedExercise> kSeedExercises = [
       'Suspendu ou allongé, monter les jambes tendues sans balancer.'),
 ];
 
+/// Exercices ajoutés au schéma v4 : machines/poulies de la salle,
+/// street workout et cardio. Insérés par la migration v4 (et par le seed
+/// des bases neuves) s'ils n'existent pas déjà.
+const List<SeedExercise> kSeedExercisesV4 = [
+  // Machines et poulies de la salle
+  SeedExercise('Chest press', ['pectoraux', 'triceps'], 'Machine', 90,
+      'Assis, pousser les poignées devant soi en contractant les pectoraux.'),
+  SeedExercise('Papillons', ['pectoraux'], 'Machine', 90,
+      'Pec deck : ramener les bras devant soi en serrant les pectoraux.'),
+  SeedExercise('Fly vers le bas', ['pectoraux'], 'Poulie', 90,
+      'Poulies hautes, ramener les poignées vers le bas et l\'avant.'),
+  SeedExercise('Fly vers le haut', ['pectoraux', 'epaules'], 'Poulie', 90,
+      'Poulies basses, monter les poignées devant soi en croisant.'),
+  SeedExercise('Shoulder press', ['epaules', 'triceps'], 'Machine', 90,
+      'Assis, pousser les poignées au-dessus de la tête.'),
+  SeedExercise('Élévations latérales poulie', ['epaules'], 'Poulie', 60,
+      'À la poulie basse, monter le bras à l\'horizontale sur le côté.'),
+  SeedExercise('Élévations frontales poulie', ['epaules'], 'Poulie', 60,
+      'À la poulie basse, monter la poignée devant soi à hauteur d\'épaule.'),
+  SeedExercise('Triceps vers le bas', ['triceps'], 'Poulie', 90,
+      'Poulie haute, coudes fixes, étendre les avant-bras vers le bas.'),
+  SeedExercise('Triceps vers le haut', ['triceps'], 'Poulie', 90,
+      'Extension au-dessus de la tête, coudes serrés.'),
+  SeedExercise('Papillons dos', ['epaules', 'dos'], 'Machine', 90,
+      'Pec deck inversé : écarter les bras vers l\'arrière.'),
+  SeedExercise('Tirage bûcheron', ['dos'], 'Poulie', 90,
+      'Tirage unilatéral à la poulie, buste gainé, coude le long du corps.'),
+  SeedExercise('Curl pupitre', ['biceps'], 'Machine', 90,
+      'Bras posés sur le pupitre, fléchir les avant-bras.'),
+  SeedExercise('Curl marteau banc incliné', ['biceps', 'avant-bras'],
+      'Haltères', 90,
+      'Allongé sur banc incliné, curl en prise neutre, bras vers l\'arrière.'),
+  SeedExercise('Curl poulie', ['biceps'], 'Poulie', 90,
+      'À la poulie basse, coudes fixes, fléchir les avant-bras.'),
+  SeedExercise('Tractions supination', ['biceps', 'dos'], 'Poids du corps',
+      120,
+      'Tractions en prise supination (paumes vers soi), biceps prioritaires.'),
+  SeedExercise('Hack squat', ['jambes', 'fessiers'], 'Machine', 120,
+      'Dos calé sur la machine inclinée, fléchir les jambes puis pousser.'),
+  SeedExercise('Leg curl allongé', ['jambes'], 'Machine', 90,
+      'Allongé sur le ventre, fléchir les jambes contre la résistance.'),
+  SeedExercise('Fentes bulgares', ['jambes', 'fessiers'], 'Haltères', 90,
+      'Pied arrière surélevé sur un banc, descendre sur la jambe avant.'),
+  // Street workout
+  SeedExercise('Muscle-up', ['dos', 'pectoraux', 'triceps'], 'Poids du corps',
+      150,
+      'Traction explosive puis passage au-dessus de la barre en dips.'),
+  SeedExercise('Pistol squat', ['jambes', 'fessiers'], 'Poids du corps', 90,
+      'Squat complet sur une jambe, l\'autre tendue devant soi.'),
+  SeedExercise('Pompes en poirier', ['epaules', 'triceps'], 'Poids du corps',
+      120,
+      'En équilibre contre un mur, fléchir les bras jusqu\'au sol et pousser.'),
+  SeedExercise('Pompes archer', ['pectoraux', 'triceps'], 'Poids du corps', 90,
+      'Pompes en déportant le poids sur un bras, l\'autre tendu sur le côté.'),
+  SeedExercise('Front lever', ['dos', 'abdominaux'], 'Poids du corps', 120,
+      'Suspendu à la barre, corps tendu à l\'horizontale, tenir la position.',
+      isDuration: true),
+  SeedExercise('L-sit', ['abdominaux'], 'Poids du corps', 90,
+      'En appui, jambes tendues à l\'horizontale, tenir la position.',
+      isDuration: true),
+  // Cardio (durée + distance)
+  SeedExercise('Rameur', ['cardio', 'dos', 'jambes'], 'Machine', 60,
+      'Tirage complet jambes-dos-bras, allure régulière.',
+      isCardio: true),
+  SeedExercise('Skieur', ['cardio', 'epaules', 'dos'], 'Machine', 60,
+      'SkiErg : tirer les poignées de haut en bas comme en ski de fond.',
+      isCardio: true),
+  SeedExercise('Course', ['cardio', 'jambes'], 'Tapis / extérieur', 60,
+      'Course sur tapis ou en extérieur.',
+      isCardio: true),
+];
+
 /// Correspondance des anciens libellés (schéma v1, un seul groupe par
 /// exercice) vers les slugs actuels — utilisée par la migration v1 → v2.
 const Map<String, String> kLegacyLabelToSlug = {
@@ -155,5 +231,44 @@ const List<SeedTemplate> kSeedTemplates = [
     ('Rowing barre', 3, 10, 120),
     ('Développé militaire', 2, 12, 90),
     ('Curl biceps', 2, 12, 60),
+  ]),
+];
+
+/// Templates des séances types réelles (reconstituées depuis l'historique
+/// importé). Ajoutés par la migration v4 s'ils n'existent pas déjà.
+const List<SeedTemplate> kSeedTemplatesV4 = [
+  SeedTemplate('Pecs', 'Séance pectoraux machines et poulies.',
+      'pecs,machines', [
+    ('Chest press', 4, 10, 90),
+    ('Papillons', 4, 12, 90),
+    ('Dips', 4, 10, 120),
+    ('Fly vers le bas', 3, 12, 90),
+  ]),
+  SeedTemplate('Épaules machine', 'Shoulder press et poulies.',
+      'épaules,machines', [
+    ('Shoulder press', 4, 12, 90),
+    ('Élévations latérales poulie', 4, 12, 60),
+    ('Oiseau', 4, 12, 60),
+  ]),
+  SeedTemplate('Triceps', 'Extensions à la poulie.', 'triceps,poulie', [
+    ('Triceps vers le bas', 4, 10, 90),
+    ('Triceps vers le haut', 3, 10, 90),
+  ]),
+  SeedTemplate('Dos', 'Tractions et tirages.', 'dos,pull', [
+    ('Traction', 4, 10, 120),
+    ('Tirage horizontal', 4, 12, 90),
+    ('Rowing barre', 4, 12, 90),
+  ]),
+  SeedTemplate('Biceps', 'Curls pupitre, haltères et poulie.', 'biceps', [
+    ('Curl pupitre', 4, 10, 90),
+    ('Curl marteau banc incliné', 4, 10, 90),
+    ('Curl marteau', 3, 12, 90),
+  ]),
+  SeedTemplate('Bas du corps', 'Quadriceps, ischios et mollets.', 'jambes', [
+    ('Squat', 4, 10, 120),
+    ('Presse à cuisses', 3, 10, 120),
+    ('Leg extension', 3, 12, 90),
+    ('Leg curl', 3, 12, 90),
+    ('Mollets debout', 4, 10, 60),
   ]),
 ];

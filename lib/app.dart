@@ -11,13 +11,13 @@ class GymApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+    final themeSettings = ref.watch(themeSettingsProvider);
     return MaterialApp.router(
       title: 'Gym Tracker',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: themeMode,
+      theme: AppTheme.light(themeSettings.accent),
+      darkTheme: AppTheme.dark(themeSettings.accent),
+      themeMode: themeSettings.mode,
       routerConfig: appRouter,
       locale: const Locale('fr'),
       supportedLocales: const [Locale('fr'), Locale('en')],

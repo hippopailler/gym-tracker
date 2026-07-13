@@ -30,5 +30,25 @@ class ExerciseRepository {
     );
   }
 
+  Future<void> update({
+    required int id,
+    required String name,
+    required String equipment,
+    required String description,
+    required int defaultRestSeconds,
+    required List<String> muscleSlugs,
+    required String exerciseType,
+  }) {
+    return _db.exerciseDao.updateExercise(
+      id: id,
+      name: name,
+      equipment: equipment,
+      description: description,
+      defaultRestSeconds: defaultRestSeconds,
+      muscleSlugs: muscleSlugs,
+      exerciseType: exerciseType,
+    );
+  }
+
   Future<void> delete(int id) => _db.exerciseDao.deleteExercise(id);
 }

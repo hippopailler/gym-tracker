@@ -14,7 +14,8 @@ void main() {
   test('la base est pré-remplie avec le catalogue et les templates par défaut',
       () async {
     final exercises = await db.exerciseDao.watchAllWithMuscles().first;
-    expect(exercises.length, kSeedExercises.length);
+    expect(exercises.length,
+        kSeedExercises.length + kSeedExercisesV4.length);
     final names = exercises.map((e) => e.exercise.name);
     expect(names, contains('Développé couché'));
     expect(names, contains('Hip thrust'));
@@ -28,7 +29,8 @@ void main() {
     expect(deadlift.muscleSlugs, containsAll(['dos', 'jambes', 'fessiers']));
 
     final templates = await db.templateDao.watchAllWithExercises().first;
-    expect(templates.length, kSeedTemplates.length);
+    expect(templates.length,
+        kSeedTemplates.length + kSeedTemplatesV4.length);
     final fullBody = templates
         .firstWhere((t) => t.template.name == 'Full body débutant');
     expect(fullBody.exercises.length, 5);
@@ -52,7 +54,7 @@ void main() {
     await db.exerciseDao.deleteExercise(id);
     final after = await db.exerciseDao.watchAllWithMuscles().first;
     expect(after.any((e) => e.exercise.id == id), isFalse);
-    expect(after.length, kSeedExercises.length);
+    expect(after.length, kSeedExercises.length + kSeedExercisesV4.length);
   });
 
   test('création, duplication et suppression de template', () async {

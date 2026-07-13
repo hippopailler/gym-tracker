@@ -38,6 +38,81 @@ class HomeScreen extends ConsumerWidget {
     if (context.mounted) context.push('/session');
   }
 
+  /// Choix de la couleur d'accent de l'application.
+  Future<void> _showAccentPicker(BuildContext context, WidgetRef ref) {
+    return showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final current = ref.watch(themeSettingsProvider).accent;
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Couleur de l\'application',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      for (final accent in AppAccent.values)
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              borderRadius: BorderRadius.circular(28),
+                              onTap: () => ref
+                                  .read(themeSettingsProvider.notifier)
+                                  .setAccent(accent),
+                              child: Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: accent.accent,
+                                  border: accent == current
+                                      ? Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                          width: 3)
+                                      : null,
+                                ),
+                                child: accent == current
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white)
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              accent.label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: accent == current
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Future<bool?> _confirmReplace(BuildContext context) {
     return showDialog<bool>(
       context: context,
@@ -64,7 +139,7 @@ class HomeScreen extends ConsumerWidget {
     final activeSession = ref.watch(activeSessionProvider);
     final templatesAsync = ref.watch(templatesProvider);
     final summariesAsync = ref.watch(sessionSummariesProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final themeSettings = ref.watch(themeSettingsProvider);
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -72,12 +147,17 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('Gym Tracker'),
         actions: [
           IconButton(
+            tooltip: 'Couleur de l\'application',
+            icon: const Icon(Icons.palette_outlined),
+            onPressed: () => _showAccentPicker(context, ref),
+          ),
+          IconButton(
             tooltip: 'Basculer le thème',
-            icon: Icon(themeMode == ThemeMode.dark
+            icon: Icon(themeSettings.mode == ThemeMode.dark
                 ? Icons.light_mode_outlined
                 : Icons.dark_mode_outlined),
-            onPressed: () => ref.read(themeModeProvider.notifier).state =
-                themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
+            onPressed: () =>
+                ref.read(themeSettingsProvider.notifier).toggleMode(),
           ),
         ],
       ),

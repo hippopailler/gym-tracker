@@ -25,6 +25,7 @@ const List<MuscleGroup> kMuscleGroups = [
   MuscleGroup(slug: 'fessiers', label: 'Fessiers', icon: Icons.stairs),
   MuscleGroup(slug: 'mollets', label: 'Mollets', icon: Icons.directions_walk),
   MuscleGroup(slug: 'avant-bras', label: 'Avant-bras', icon: Icons.pan_tool),
+  MuscleGroup(slug: 'cardio', label: 'Cardio', icon: Icons.monitor_heart),
 ];
 
 /// Résout un slug vers son groupe ; les slugs inconnus (données importées ou

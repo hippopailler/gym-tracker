@@ -120,9 +120,10 @@ Future<void> _expectMigrated(NativeDatabase executor) async {
 
   final exercises = await db.exerciseDao.watchAllWithMuscles().first;
 
-  // Catalogue enrichi : les nouveaux exercices sont ajoutés, les existants
-  // ne sont pas dupliqués (Traction déjà présente).
-  expect(exercises.length, kSeedExercises.length + 1);
+  // Catalogue enrichi (v2 puis v4) : les nouveaux exercices sont ajoutés,
+  // les existants ne sont pas dupliqués (Traction déjà présente).
+  expect(exercises.length,
+      kSeedExercises.length + kSeedExercisesV4.length + 1);
 
   // L'exercice du catalogue est enrichi avec ses groupes multiples.
   final pullUp = exercises.firstWhere((e) => e.exercise.name == 'Traction');
@@ -135,10 +136,21 @@ Future<void> _expectMigrated(NativeDatabase executor) async {
   expect(custom.muscleSlugs, ['dos']);
 
   // L'historique de performances est intact.
-  final lastSets = await db.sessionDao.lastSetsForExercise(1);
-  expect(lastSets.length, 2);
-  expect(lastSets.map((s) => s.reps), [8, 6]);
-
   final summaries = await db.sessionDao.watchSummaries().first;
-  expect(summaries.single.session.name, 'Pull');
+  expect(summaries.any((s) => s.session.name == 'Pull'), isTrue);
+
+  // v4 : templates des séances types + historique transcrit importé.
+  final templates = await db.templateDao.watchAllWithExercises().first;
+  expect(templates.any((t) => t.template.name == 'Pecs'), isTrue);
+  expect(await db.getSetting('history_imported'), '1');
+  final imported = summaries
+      .where((s) =>
+          s.session.name == 'Pecs + Triceps' &&
+          s.session.date == DateTime(2026, 3, 17, 18))
+      .single;
+  final detail = await db.sessionDao.getDetail(imported.session.id);
+  final chestPress = detail!.exercises
+      .firstWhere((e) => e.exercise.name == 'Chest press');
+  expect(chestPress.sets.map((s) => (s.weightKg, s.reps)),
+      [(43.0, 12), (57.0, 10), (57.0, 10), (57.0, 10)]);
 }

@@ -108,11 +108,21 @@ class GroupExercisesScreen extends ConsumerWidget {
                               color: scheme.onSurfaceVariant, size: 20),
                         ),
                   trailing: detail.exercise.isCustom
-                      ? IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: 'Supprimer',
-                          onPressed: () =>
-                              _confirmDelete(context, ref, detail),
+                      ? PopupMenuButton<String>(
+                          tooltip: 'Modifier ou supprimer',
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              showAddExerciseSheet(context, edit: detail);
+                            } else if (value == 'delete') {
+                              _confirmDelete(context, ref, detail);
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                                value: 'edit', child: Text('Modifier')),
+                            PopupMenuItem(
+                                value: 'delete', child: Text('Supprimer')),
+                          ],
                         )
                       : null,
                   onTap: () => showExerciseDetailSheet(context, detail),

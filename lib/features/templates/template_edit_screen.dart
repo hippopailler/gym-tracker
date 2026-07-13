@@ -77,17 +77,24 @@ class _TemplateEditScreenState extends ConsumerState<TemplateEditScreen> {
     super.dispose();
   }
 
-  Future<void> _addExercise() async {
-    final detail = await showExercisePicker(context);
-    if (detail == null) return;
-    if (_items.any((i) => i.detail.exercise.id == detail.exercise.id)) return;
+  Future<void> _addExercises() async {
+    final details = await showMultiExercisePicker(
+      context,
+      alreadyPicked: {for (final i in _items) i.detail.exercise.id},
+    );
+    if (details == null || details.isEmpty) return;
     setState(() {
-      _items.add(_EditableItem(
-        detail: detail,
-        targetSets: 3,
-        targetReps: 10,
-        restSeconds: detail.exercise.defaultRestSeconds,
-      ));
+      for (final detail in details) {
+        if (_items.any((i) => i.detail.exercise.id == detail.exercise.id)) {
+          continue;
+        }
+        _items.add(_EditableItem(
+          detail: detail,
+          targetSets: 3,
+          targetReps: 10,
+          restSeconds: detail.exercise.defaultRestSeconds,
+        ));
+      }
     });
   }
 
@@ -176,7 +183,7 @@ class _TemplateEditScreenState extends ConsumerState<TemplateEditScreen> {
                     ),
                     const Spacer(),
                     TextButton.icon(
-                      onPressed: _addExercise,
+                      onPressed: _addExercises,
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text('Ajouter'),
                     ),

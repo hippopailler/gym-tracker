@@ -7,6 +7,9 @@ abstract class ExerciseTypes {
 
   /// Durée en secondes (planche, gainage…).
   static const String duration = 'duration';
+
+  /// Cardio : durée + distance (rameur, skieur, course…).
+  static const String cardio = 'cardio';
 }
 
 @DataClassName('Exercise')
@@ -82,6 +85,10 @@ class SessionExercises extends Table {
   IntColumn get exerciseId =>
       integer().references(Exercises, #id, onDelete: KeyAction.cascade)();
   IntColumn get position => integer()();
+
+  /// Note libre sur l'exercice pour cette séance (réglages machine,
+  /// sensations…).
+  TextColumn get notes => text().withDefault(const Constant(''))();
 }
 
 @DataClassName('SetEntry')
@@ -95,8 +102,22 @@ class SetEntries extends Table {
   RealColumn get rpe => real().nullable()();
   IntColumn get restTakenSeconds => integer().nullable()();
 
-  /// Durée effectuée, pour les exercices de type [ExerciseTypes.duration].
+  /// Durée effectuée, pour les exercices de type [ExerciseTypes.duration]
+  /// et [ExerciseTypes.cardio].
   IntColumn get durationSeconds => integer().nullable()();
+
+  /// Distance parcourue en mètres, pour les exercices cardio.
+  RealColumn get distanceMeters => real().nullable()();
+}
+
+/// Réglages de l'application (clé → valeur) : thème, drapeaux d'import…
+@DataClassName('AppSetting')
+class AppSettings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
 }
 
 /// Instantané JSON de la séance en cours, sauvegardé au fil de l'eau pour

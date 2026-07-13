@@ -1651,8 +1651,16 @@ class $SessionExercisesTable extends SessionExercises
   late final GeneratedColumn<int> position = GeneratedColumn<int>(
       'position', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
-  List<GeneratedColumn> get $columns => [id, sessionId, exerciseId, position];
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, sessionId, exerciseId, position, notes];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1686,6 +1694,10 @@ class $SessionExercisesTable extends SessionExercises
     } else if (isInserting) {
       context.missing(_positionMeta);
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
     return context;
   }
 
@@ -1703,6 +1715,8 @@ class $SessionExercisesTable extends SessionExercises
           .read(DriftSqlType.int, data['${effectivePrefix}exercise_id'])!,
       position: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes'])!,
     );
   }
 
@@ -1717,11 +1731,16 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
   final int sessionId;
   final int exerciseId;
   final int position;
+
+  /// Note libre sur l'exercice pour cette séance (réglages machine,
+  /// sensations…).
+  final String notes;
   const SessionExercise(
       {required this.id,
       required this.sessionId,
       required this.exerciseId,
-      required this.position});
+      required this.position,
+      required this.notes});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1729,6 +1748,7 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
     map['session_id'] = Variable<int>(sessionId);
     map['exercise_id'] = Variable<int>(exerciseId);
     map['position'] = Variable<int>(position);
+    map['notes'] = Variable<String>(notes);
     return map;
   }
 
@@ -1738,6 +1758,7 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       sessionId: Value(sessionId),
       exerciseId: Value(exerciseId),
       position: Value(position),
+      notes: Value(notes),
     );
   }
 
@@ -1749,6 +1770,7 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       sessionId: serializer.fromJson<int>(json['sessionId']),
       exerciseId: serializer.fromJson<int>(json['exerciseId']),
       position: serializer.fromJson<int>(json['position']),
+      notes: serializer.fromJson<String>(json['notes']),
     );
   }
   @override
@@ -1759,16 +1781,22 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       'sessionId': serializer.toJson<int>(sessionId),
       'exerciseId': serializer.toJson<int>(exerciseId),
       'position': serializer.toJson<int>(position),
+      'notes': serializer.toJson<String>(notes),
     };
   }
 
   SessionExercise copyWith(
-          {int? id, int? sessionId, int? exerciseId, int? position}) =>
+          {int? id,
+          int? sessionId,
+          int? exerciseId,
+          int? position,
+          String? notes}) =>
       SessionExercise(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
         exerciseId: exerciseId ?? this.exerciseId,
         position: position ?? this.position,
+        notes: notes ?? this.notes,
       );
   SessionExercise copyWithCompanion(SessionExercisesCompanion data) {
     return SessionExercise(
@@ -1777,6 +1805,7 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       exerciseId:
           data.exerciseId.present ? data.exerciseId.value : this.exerciseId,
       position: data.position.present ? data.position.value : this.position,
+      notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
 
@@ -1786,13 +1815,14 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('exerciseId: $exerciseId, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('notes: $notes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, exerciseId, position);
+  int get hashCode => Object.hash(id, sessionId, exerciseId, position, notes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1800,7 +1830,8 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.exerciseId == this.exerciseId &&
-          other.position == this.position);
+          other.position == this.position &&
+          other.notes == this.notes);
 }
 
 class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
@@ -1808,17 +1839,20 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
   final Value<int> sessionId;
   final Value<int> exerciseId;
   final Value<int> position;
+  final Value<String> notes;
   const SessionExercisesCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.exerciseId = const Value.absent(),
     this.position = const Value.absent(),
+    this.notes = const Value.absent(),
   });
   SessionExercisesCompanion.insert({
     this.id = const Value.absent(),
     required int sessionId,
     required int exerciseId,
     required int position,
+    this.notes = const Value.absent(),
   })  : sessionId = Value(sessionId),
         exerciseId = Value(exerciseId),
         position = Value(position);
@@ -1827,12 +1861,14 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     Expression<int>? sessionId,
     Expression<int>? exerciseId,
     Expression<int>? position,
+    Expression<String>? notes,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (exerciseId != null) 'exercise_id': exerciseId,
       if (position != null) 'position': position,
+      if (notes != null) 'notes': notes,
     });
   }
 
@@ -1840,12 +1876,14 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
       {Value<int>? id,
       Value<int>? sessionId,
       Value<int>? exerciseId,
-      Value<int>? position}) {
+      Value<int>? position,
+      Value<String>? notes}) {
     return SessionExercisesCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       exerciseId: exerciseId ?? this.exerciseId,
       position: position ?? this.position,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -1864,6 +1902,9 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     return map;
   }
 
@@ -1873,7 +1914,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('exerciseId: $exerciseId, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('notes: $notes')
           ..write(')'))
         .toString();
   }
@@ -1937,6 +1979,12 @@ class $SetEntriesTable extends SetEntries
   late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
       'duration_seconds', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _distanceMetersMeta =
+      const VerificationMeta('distanceMeters');
+  @override
+  late final GeneratedColumn<double> distanceMeters = GeneratedColumn<double>(
+      'distance_meters', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1946,7 +1994,8 @@ class $SetEntriesTable extends SetEntries
         reps,
         rpe,
         restTakenSeconds,
-        durationSeconds
+        durationSeconds,
+        distanceMeters
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2003,6 +2052,12 @@ class $SetEntriesTable extends SetEntries
           durationSeconds.isAcceptableOrUnknown(
               data['duration_seconds']!, _durationSecondsMeta));
     }
+    if (data.containsKey('distance_meters')) {
+      context.handle(
+          _distanceMetersMeta,
+          distanceMeters.isAcceptableOrUnknown(
+              data['distance_meters']!, _distanceMetersMeta));
+    }
     return context;
   }
 
@@ -2028,6 +2083,8 @@ class $SetEntriesTable extends SetEntries
           .read(DriftSqlType.int, data['${effectivePrefix}rest_taken_seconds']),
       durationSeconds: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds']),
+      distanceMeters: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}distance_meters']),
     );
   }
 
@@ -2046,8 +2103,12 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
   final double? rpe;
   final int? restTakenSeconds;
 
-  /// Durée effectuée, pour les exercices de type [ExerciseTypes.duration].
+  /// Durée effectuée, pour les exercices de type [ExerciseTypes.duration]
+  /// et [ExerciseTypes.cardio].
   final int? durationSeconds;
+
+  /// Distance parcourue en mètres, pour les exercices cardio.
+  final double? distanceMeters;
   const SetEntry(
       {required this.id,
       required this.sessionExerciseId,
@@ -2056,7 +2117,8 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       required this.reps,
       this.rpe,
       this.restTakenSeconds,
-      this.durationSeconds});
+      this.durationSeconds,
+      this.distanceMeters});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2073,6 +2135,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     }
     if (!nullToAbsent || durationSeconds != null) {
       map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    if (!nullToAbsent || distanceMeters != null) {
+      map['distance_meters'] = Variable<double>(distanceMeters);
     }
     return map;
   }
@@ -2091,6 +2156,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       durationSeconds: durationSeconds == null && nullToAbsent
           ? const Value.absent()
           : Value(durationSeconds),
+      distanceMeters: distanceMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(distanceMeters),
     );
   }
 
@@ -2106,6 +2174,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       rpe: serializer.fromJson<double?>(json['rpe']),
       restTakenSeconds: serializer.fromJson<int?>(json['restTakenSeconds']),
       durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      distanceMeters: serializer.fromJson<double?>(json['distanceMeters']),
     );
   }
   @override
@@ -2120,6 +2189,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       'rpe': serializer.toJson<double?>(rpe),
       'restTakenSeconds': serializer.toJson<int?>(restTakenSeconds),
       'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'distanceMeters': serializer.toJson<double?>(distanceMeters),
     };
   }
 
@@ -2131,7 +2201,8 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           int? reps,
           Value<double?> rpe = const Value.absent(),
           Value<int?> restTakenSeconds = const Value.absent(),
-          Value<int?> durationSeconds = const Value.absent()}) =>
+          Value<int?> durationSeconds = const Value.absent(),
+          Value<double?> distanceMeters = const Value.absent()}) =>
       SetEntry(
         id: id ?? this.id,
         sessionExerciseId: sessionExerciseId ?? this.sessionExerciseId,
@@ -2145,6 +2216,8 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
         durationSeconds: durationSeconds.present
             ? durationSeconds.value
             : this.durationSeconds,
+        distanceMeters:
+            distanceMeters.present ? distanceMeters.value : this.distanceMeters,
       );
   SetEntry copyWithCompanion(SetEntriesCompanion data) {
     return SetEntry(
@@ -2162,6 +2235,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       durationSeconds: data.durationSeconds.present
           ? data.durationSeconds.value
           : this.durationSeconds,
+      distanceMeters: data.distanceMeters.present
+          ? data.distanceMeters.value
+          : this.distanceMeters,
     );
   }
 
@@ -2175,14 +2251,15 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           ..write('reps: $reps, ')
           ..write('rpe: $rpe, ')
           ..write('restTakenSeconds: $restTakenSeconds, ')
-          ..write('durationSeconds: $durationSeconds')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('distanceMeters: $distanceMeters')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, sessionExerciseId, setNumber, weightKg,
-      reps, rpe, restTakenSeconds, durationSeconds);
+      reps, rpe, restTakenSeconds, durationSeconds, distanceMeters);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2194,7 +2271,8 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           other.reps == this.reps &&
           other.rpe == this.rpe &&
           other.restTakenSeconds == this.restTakenSeconds &&
-          other.durationSeconds == this.durationSeconds);
+          other.durationSeconds == this.durationSeconds &&
+          other.distanceMeters == this.distanceMeters);
 }
 
 class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
@@ -2206,6 +2284,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
   final Value<double?> rpe;
   final Value<int?> restTakenSeconds;
   final Value<int?> durationSeconds;
+  final Value<double?> distanceMeters;
   const SetEntriesCompanion({
     this.id = const Value.absent(),
     this.sessionExerciseId = const Value.absent(),
@@ -2215,6 +2294,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     this.rpe = const Value.absent(),
     this.restTakenSeconds = const Value.absent(),
     this.durationSeconds = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
   });
   SetEntriesCompanion.insert({
     this.id = const Value.absent(),
@@ -2225,6 +2305,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     this.rpe = const Value.absent(),
     this.restTakenSeconds = const Value.absent(),
     this.durationSeconds = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
   })  : sessionExerciseId = Value(sessionExerciseId),
         setNumber = Value(setNumber),
         weightKg = Value(weightKg),
@@ -2238,6 +2319,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     Expression<double>? rpe,
     Expression<int>? restTakenSeconds,
     Expression<int>? durationSeconds,
+    Expression<double>? distanceMeters,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2248,6 +2330,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       if (rpe != null) 'rpe': rpe,
       if (restTakenSeconds != null) 'rest_taken_seconds': restTakenSeconds,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (distanceMeters != null) 'distance_meters': distanceMeters,
     });
   }
 
@@ -2259,7 +2342,8 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       Value<int>? reps,
       Value<double?>? rpe,
       Value<int?>? restTakenSeconds,
-      Value<int?>? durationSeconds}) {
+      Value<int?>? durationSeconds,
+      Value<double?>? distanceMeters}) {
     return SetEntriesCompanion(
       id: id ?? this.id,
       sessionExerciseId: sessionExerciseId ?? this.sessionExerciseId,
@@ -2269,6 +2353,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       rpe: rpe ?? this.rpe,
       restTakenSeconds: restTakenSeconds ?? this.restTakenSeconds,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
     );
   }
 
@@ -2299,6 +2384,9 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     if (durationSeconds.present) {
       map['duration_seconds'] = Variable<int>(durationSeconds.value);
     }
+    if (distanceMeters.present) {
+      map['distance_meters'] = Variable<double>(distanceMeters.value);
+    }
     return map;
   }
 
@@ -2312,7 +2400,8 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
           ..write('reps: $reps, ')
           ..write('rpe: $rpe, ')
           ..write('restTakenSeconds: $restTakenSeconds, ')
-          ..write('durationSeconds: $durationSeconds')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('distanceMeters: $distanceMeters')
           ..write(')'))
         .toString();
   }
@@ -2535,6 +2624,196 @@ class ActiveSessionDraftsCompanion
   }
 }
 
+class $AppSettingsTable extends AppSettings
+    with TableInfo<$AppSettingsTable, AppSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AppSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+      'value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [key, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'app_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<AppSetting> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  AppSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AppSetting(
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}value'])!,
+    );
+  }
+
+  @override
+  $AppSettingsTable createAlias(String alias) {
+    return $AppSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class AppSetting extends DataClass implements Insertable<AppSetting> {
+  final String key;
+  final String value;
+  const AppSetting({required this.key, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  AppSettingsCompanion toCompanion(bool nullToAbsent) {
+    return AppSettingsCompanion(
+      key: Value(key),
+      value: Value(value),
+    );
+  }
+
+  factory AppSetting.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AppSetting(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  AppSetting copyWith({String? key, String? value}) => AppSetting(
+        key: key ?? this.key,
+        value: value ?? this.value,
+      );
+  AppSetting copyWithCompanion(AppSettingsCompanion data) {
+    return AppSetting(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppSetting(')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AppSetting &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const AppSettingsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AppSettingsCompanion.insert({
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  })  : key = Value(key),
+        value = Value(value);
+  static Insertable<AppSetting> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AppSettingsCompanion copyWith(
+      {Value<String>? key, Value<String>? value, Value<int>? rowid}) {
+    return AppSettingsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppSettingsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2552,6 +2831,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SetEntriesTable setEntries = $SetEntriesTable(this);
   late final $ActiveSessionDraftsTable activeSessionDrafts =
       $ActiveSessionDraftsTable(this);
+  late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final ExerciseDao exerciseDao = ExerciseDao(this as AppDatabase);
   late final TemplateDao templateDao = TemplateDao(this as AppDatabase);
   late final SessionDao sessionDao = SessionDao(this as AppDatabase);
@@ -2567,7 +2847,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         workoutSessions,
         sessionExercises,
         setEntries,
-        activeSessionDrafts
+        activeSessionDrafts,
+        appSettings
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -4362,6 +4643,7 @@ typedef $$SessionExercisesTableCreateCompanionBuilder
   required int sessionId,
   required int exerciseId,
   required int position,
+  Value<String> notes,
 });
 typedef $$SessionExercisesTableUpdateCompanionBuilder
     = SessionExercisesCompanion Function({
@@ -4369,6 +4651,7 @@ typedef $$SessionExercisesTableUpdateCompanionBuilder
   Value<int> sessionId,
   Value<int> exerciseId,
   Value<int> position,
+  Value<String> notes,
 });
 
 final class $$SessionExercisesTableReferences extends BaseReferences<
@@ -4435,6 +4718,9 @@ class $$SessionExercisesTableFilterComposer
 
   ColumnFilters<int> get position => $composableBuilder(
       column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
 
   $$WorkoutSessionsTableFilterComposer get sessionId {
     final $$WorkoutSessionsTableFilterComposer composer = $composerBuilder(
@@ -4513,6 +4799,9 @@ class $$SessionExercisesTableOrderingComposer
   ColumnOrderings<int> get position => $composableBuilder(
       column: $table.position, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
   $$WorkoutSessionsTableOrderingComposer get sessionId {
     final $$WorkoutSessionsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -4568,6 +4857,9 @@ class $$SessionExercisesTableAnnotationComposer
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   $$WorkoutSessionsTableAnnotationComposer get sessionId {
     final $$WorkoutSessionsTableAnnotationComposer composer = $composerBuilder(
@@ -4660,24 +4952,28 @@ class $$SessionExercisesTableTableManager extends RootTableManager<
             Value<int> sessionId = const Value.absent(),
             Value<int> exerciseId = const Value.absent(),
             Value<int> position = const Value.absent(),
+            Value<String> notes = const Value.absent(),
           }) =>
               SessionExercisesCompanion(
             id: id,
             sessionId: sessionId,
             exerciseId: exerciseId,
             position: position,
+            notes: notes,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int sessionId,
             required int exerciseId,
             required int position,
+            Value<String> notes = const Value.absent(),
           }) =>
               SessionExercisesCompanion.insert(
             id: id,
             sessionId: sessionId,
             exerciseId: exerciseId,
             position: position,
+            notes: notes,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -4772,6 +5068,7 @@ typedef $$SetEntriesTableCreateCompanionBuilder = SetEntriesCompanion Function({
   Value<double?> rpe,
   Value<int?> restTakenSeconds,
   Value<int?> durationSeconds,
+  Value<double?> distanceMeters,
 });
 typedef $$SetEntriesTableUpdateCompanionBuilder = SetEntriesCompanion Function({
   Value<int> id,
@@ -4782,6 +5079,7 @@ typedef $$SetEntriesTableUpdateCompanionBuilder = SetEntriesCompanion Function({
   Value<double?> rpe,
   Value<int?> restTakenSeconds,
   Value<int?> durationSeconds,
+  Value<double?> distanceMeters,
 });
 
 final class $$SetEntriesTableReferences
@@ -4837,6 +5135,10 @@ class $$SetEntriesTableFilterComposer
       column: $table.durationSeconds,
       builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<double> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters,
+      builder: (column) => ColumnFilters(column));
+
   $$SessionExercisesTableFilterComposer get sessionExerciseId {
     final $$SessionExercisesTableFilterComposer composer = $composerBuilder(
         composer: this,
@@ -4890,6 +5192,10 @@ class $$SetEntriesTableOrderingComposer
       column: $table.durationSeconds,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters,
+      builder: (column) => ColumnOrderings(column));
+
   $$SessionExercisesTableOrderingComposer get sessionExerciseId {
     final $$SessionExercisesTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -4940,6 +5246,9 @@ class $$SetEntriesTableAnnotationComposer
 
   GeneratedColumn<int> get durationSeconds => $composableBuilder(
       column: $table.durationSeconds, builder: (column) => column);
+
+  GeneratedColumn<double> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters, builder: (column) => column);
 
   $$SessionExercisesTableAnnotationComposer get sessionExerciseId {
     final $$SessionExercisesTableAnnotationComposer composer = $composerBuilder(
@@ -4993,6 +5302,7 @@ class $$SetEntriesTableTableManager extends RootTableManager<
             Value<double?> rpe = const Value.absent(),
             Value<int?> restTakenSeconds = const Value.absent(),
             Value<int?> durationSeconds = const Value.absent(),
+            Value<double?> distanceMeters = const Value.absent(),
           }) =>
               SetEntriesCompanion(
             id: id,
@@ -5003,6 +5313,7 @@ class $$SetEntriesTableTableManager extends RootTableManager<
             rpe: rpe,
             restTakenSeconds: restTakenSeconds,
             durationSeconds: durationSeconds,
+            distanceMeters: distanceMeters,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5013,6 +5324,7 @@ class $$SetEntriesTableTableManager extends RootTableManager<
             Value<double?> rpe = const Value.absent(),
             Value<int?> restTakenSeconds = const Value.absent(),
             Value<int?> durationSeconds = const Value.absent(),
+            Value<double?> distanceMeters = const Value.absent(),
           }) =>
               SetEntriesCompanion.insert(
             id: id,
@@ -5023,6 +5335,7 @@ class $$SetEntriesTableTableManager extends RootTableManager<
             rpe: rpe,
             restTakenSeconds: restTakenSeconds,
             durationSeconds: durationSeconds,
+            distanceMeters: distanceMeters,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -5223,6 +5536,128 @@ typedef $$ActiveSessionDraftsTableProcessedTableManager = ProcessedTableManager<
     ),
     ActiveSessionDraftRow,
     PrefetchHooks Function()>;
+typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
+    Function({
+  required String key,
+  required String value,
+  Value<int> rowid,
+});
+typedef $$AppSettingsTableUpdateCompanionBuilder = AppSettingsCompanion
+    Function({
+  Value<String> key,
+  Value<String> value,
+  Value<int> rowid,
+});
+
+class $$AppSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+}
+
+class $$AppSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AppSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$AppSettingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AppSettingsTable,
+    AppSetting,
+    $$AppSettingsTableFilterComposer,
+    $$AppSettingsTableOrderingComposer,
+    $$AppSettingsTableAnnotationComposer,
+    $$AppSettingsTableCreateCompanionBuilder,
+    $$AppSettingsTableUpdateCompanionBuilder,
+    (AppSetting, BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>),
+    AppSetting,
+    PrefetchHooks Function()> {
+  $$AppSettingsTableTableManager(_$AppDatabase db, $AppSettingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AppSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AppSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AppSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AppSettingsCompanion(
+            key: key,
+            value: value,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String key,
+            required String value,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AppSettingsCompanion.insert(
+            key: key,
+            value: value,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AppSettingsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AppSettingsTable,
+    AppSetting,
+    $$AppSettingsTableFilterComposer,
+    $$AppSettingsTableOrderingComposer,
+    $$AppSettingsTableAnnotationComposer,
+    $$AppSettingsTableCreateCompanionBuilder,
+    $$AppSettingsTableUpdateCompanionBuilder,
+    (AppSetting, BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>),
+    AppSetting,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5243,4 +5678,6 @@ class $AppDatabaseManager {
       $$SetEntriesTableTableManager(_db, _db.setEntries);
   $$ActiveSessionDraftsTableTableManager get activeSessionDrafts =>
       $$ActiveSessionDraftsTableTableManager(_db, _db.activeSessionDrafts);
+  $$AppSettingsTableTableManager get appSettings =>
+      $$AppSettingsTableTableManager(_db, _db.appSettings);
 }

@@ -75,6 +75,36 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Met à jour un exercice et remplace ses groupes musculaires.
+  Future<void> updateExercise({
+    required int id,
+    required String name,
+    required String equipment,
+    required String description,
+    required int defaultRestSeconds,
+    required List<String> muscleSlugs,
+    required String exerciseType,
+  }) {
+    return transaction(() async {
+      await (update(exercises)..where((e) => e.id.equals(id)))
+          .write(ExercisesCompanion(
+        name: Value(name),
+        equipment: Value(equipment),
+        description: Value(description),
+        defaultRestSeconds: Value(defaultRestSeconds),
+        exerciseType: Value(exerciseType),
+      ));
+      await (delete(exerciseMuscles)
+            ..where((m) => m.exerciseId.equals(id)))
+          .go();
+      for (final slug in muscleSlugs.toSet()) {
+        await into(exerciseMuscles).insert(
+          ExerciseMusclesCompanion.insert(exerciseId: id, muscleGroup: slug),
+        );
+      }
+    });
+  }
+
   /// Supprime un exercice (les associations et l'historique liés partent en
   /// cascade) — réservé aux exercices personnalisés côté UI.
   Future<void> deleteExercise(int id) {

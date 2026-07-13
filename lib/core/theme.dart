@@ -1,25 +1,53 @@
 import 'package:flutter/material.dart';
 
-/// Thème de l'application : Material 3, accent orange énergique,
+/// Couleurs d'accent disponibles, choisies depuis l'accueil.
+enum AppAccent {
+  orange('orange', 'Orange', Color(0xFFFF6B2C), Color(0xFFFFA36C),
+      Color(0xFFE05314)),
+  violet('violet', 'Violet', Color(0xFF8B5CF6), Color(0xFFB79CFA),
+      Color(0xFF6D28D9)),
+  vert('vert', 'Vert', Color(0xFF22C55E), Color(0xFF7BE3A2),
+      Color(0xFF15803D)),
+  bleu('bleu', 'Bleu', Color(0xFF3B82F6), Color(0xFF8AB4F8),
+      Color(0xFF1D4ED8));
+
+  const AppAccent(
+      this.slug, this.label, this.accent, this.secondary, this.lightPrimary);
+
+  /// Identifiant stable persisté dans les réglages.
+  final String slug;
+  final String label;
+
+  /// Couleur principale (thème sombre).
+  final Color accent;
+  final Color secondary;
+
+  /// Couleur principale assombrie pour le thème clair (contraste).
+  final Color lightPrimary;
+
+  static AppAccent fromSlug(String? slug) => AppAccent.values
+      .firstWhere((a) => a.slug == slug, orElse: () => AppAccent.orange);
+}
+
+/// Thème de l'application : Material 3, accent au choix (orange par défaut),
 /// sombre par défaut avec un thème clair complet.
 class AppTheme {
   AppTheme._();
 
-  static const Color accent = Color(0xFFFF6B2C);
   static const Color darkBackground = Color(0xFF0F1115);
   static const Color darkSurface = Color(0xFF171A21);
 
   /// Style pour les gros chiffres de performance (poids, chrono...).
   static const List<FontFeature> tabularFigures = [FontFeature.tabularFigures()];
 
-  static ThemeData dark() {
+  static ThemeData dark(AppAccent accent) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: accent,
+      seedColor: accent.accent,
       brightness: Brightness.dark,
     ).copyWith(
-      primary: accent,
+      primary: accent.accent,
       onPrimary: Colors.white,
-      secondary: const Color(0xFFFFA36C),
+      secondary: accent.secondary,
       surface: darkSurface,
     );
     return _base(scheme).copyWith(
@@ -27,12 +55,12 @@ class AppTheme {
     );
   }
 
-  static ThemeData light() {
+  static ThemeData light(AppAccent accent) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: accent,
+      seedColor: accent.accent,
       brightness: Brightness.light,
     ).copyWith(
-      primary: const Color(0xFFE05314),
+      primary: accent.lightPrimary,
       onPrimary: Colors.white,
     );
     return _base(scheme).copyWith(

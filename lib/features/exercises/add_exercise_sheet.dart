@@ -5,24 +5,29 @@ import '../../core/formats.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../data/database/tables.dart';
+import '../../domain/models/exercise_models.dart';
 import '../../domain/models/muscle_groups.dart';
 
 /// Formulaire de création d'un exercice personnalisé, rattachable à un ou
-/// plusieurs groupes musculaires.
+/// plusieurs groupes musculaires. Avec [edit], modifie l'exercice existant.
 Future<void> showAddExerciseSheet(BuildContext context,
-    {String? initialGroup}) {
+    {String? initialGroup, ExerciseDetail? edit}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => _AddExerciseSheet(initialGroup: initialGroup),
+    builder: (context) =>
+        _AddExerciseSheet(initialGroup: initialGroup, edit: edit),
   );
 }
 
 class _AddExerciseSheet extends ConsumerStatefulWidget {
-  const _AddExerciseSheet({this.initialGroup});
+  const _AddExerciseSheet({this.initialGroup, this.edit});
 
   final String? initialGroup;
+
+  /// Exercice à modifier (null = création).
+  final ExerciseDetail? edit;
 
   @override
   ConsumerState<_AddExerciseSheet> createState() => _AddExerciseSheetState();
@@ -40,7 +45,17 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialGroup != null) _selectedGroups.add(widget.initialGroup!);
+    final edit = widget.edit;
+    if (edit != null) {
+      _nameController.text = edit.exercise.name;
+      _equipmentController.text = edit.exercise.equipment;
+      _descriptionController.text = edit.exercise.description;
+      _selectedGroups.addAll(edit.muscleSlugs);
+      _restSeconds = edit.exercise.defaultRestSeconds;
+      _exerciseType = edit.exercise.exerciseType;
+    } else if (widget.initialGroup != null) {
+      _selectedGroups.add(widget.initialGroup!);
+    }
   }
 
   @override
@@ -62,20 +77,37 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
       return;
     }
     setState(() => _saving = true);
-    await ref.read(exerciseRepositoryProvider).create(
-          name: name,
-          equipment: _equipmentController.text.trim().isEmpty
-              ? 'Autre'
-              : _equipmentController.text.trim(),
-          description: _descriptionController.text.trim(),
-          defaultRestSeconds: _restSeconds,
-          muscleSlugs: _selectedGroups.toList(),
-          exerciseType: _exerciseType,
-        );
+    final equipment = _equipmentController.text.trim().isEmpty
+        ? 'Autre'
+        : _equipmentController.text.trim();
+    final edit = widget.edit;
+    if (edit != null) {
+      await ref.read(exerciseRepositoryProvider).update(
+            id: edit.exercise.id,
+            name: name,
+            equipment: equipment,
+            description: _descriptionController.text.trim(),
+            defaultRestSeconds: _restSeconds,
+            muscleSlugs: _selectedGroups.toList(),
+            exerciseType: _exerciseType,
+          );
+    } else {
+      await ref.read(exerciseRepositoryProvider).create(
+            name: name,
+            equipment: equipment,
+            description: _descriptionController.text.trim(),
+            defaultRestSeconds: _restSeconds,
+            muscleSlugs: _selectedGroups.toList(),
+            exerciseType: _exerciseType,
+          );
+    }
     if (mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('« $name » ajouté à tes exercices')),
+        SnackBar(
+            content: Text(edit == null
+                ? '« $name » ajouté à tes exercices'
+                : '« $name » mis à jour')),
       );
     }
   }
@@ -99,9 +131,12 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
             controller: scrollController,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
             children: [
-              const Text(
-                'Nouvel exercice',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              Text(
+                widget.edit == null
+                    ? 'Nouvel exercice'
+                    : 'Modifier l\'exercice',
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -142,7 +177,12 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                   ButtonSegment(
                     value: ExerciseTypes.duration,
                     icon: Icon(Icons.timer_outlined, size: 16),
-                    label: Text('Durée (s)'),
+                    label: Text('Durée'),
+                  ),
+                  ButtonSegment(
+                    value: ExerciseTypes.cardio,
+                    icon: Icon(Icons.monitor_heart_outlined, size: 16),
+                    label: Text('Cardio'),
                   ),
                 ],
                 selected: {_exerciseType},
@@ -206,7 +246,9 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
               FilledButton.icon(
                 onPressed: _saving ? null : _save,
                 icon: const Icon(Icons.check),
-                label: const Text('Créer l\'exercice'),
+                label: Text(widget.edit == null
+                    ? 'Créer l\'exercice'
+                    : 'Enregistrer'),
               ),
             ],
           );
