@@ -14,7 +14,9 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.example.gym"
-    compileSdk = flutter.compileSdkVersion
+    // 36 requis par flutter_plugin_android_lifecycle (via file_picker) ;
+    // flutter.compileSdkVersion traîne encore à 35.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

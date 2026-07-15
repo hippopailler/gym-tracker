@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -51,15 +51,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _import() async {
     setState(() => _busy = true);
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-        dialogTitle: 'Choisir un export Gym Tracker (.json)',
-      );
-      final path = result?.files.firstOrNull?.path;
-      if (path == null) return;
+      final picked = await openFile(acceptedTypeGroups: const [
+        XTypeGroup(label: 'Export JSON', extensions: ['json']),
+      ]);
+      if (picked == null) return;
 
-      final export =
-          DataExport.fromJsonString(await File(path).readAsString());
+      final export = DataExport.fromJsonString(await picked.readAsString());
       if (export == null) {
         _snack('Ce fichier n\'est pas un export Gym Tracker valide.');
         return;
