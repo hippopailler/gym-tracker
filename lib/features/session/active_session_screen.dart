@@ -9,7 +9,9 @@ import '../../core/formats.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../domain/models/active_session.dart';
+import '../../domain/models/exercise_models.dart';
 import '../../domain/models/progress_models.dart';
+import '../../domain/services/replacement_service.dart';
 import '../../widgets/exercise_picker_sheet.dart';
 import '../../widgets/rest_timer_bar.dart';
 import '../../widgets/set_row.dart';
@@ -303,6 +305,102 @@ class _ExerciseCard extends ConsumerWidget {
     }
   }
 
+  /// Machine occupée, douleur… : propose des exercices proches (mêmes
+  /// groupes musculaires, même type de préférence) puis remplace en gardant
+  /// les cibles de la séance.
+  Future<void> _replaceExercise(BuildContext context, WidgetRef ref) async {
+    final all = ref.read(exercisesProvider).valueOrNull;
+    final session = ref.read(activeSessionProvider);
+    if (all == null || session == null) return;
+
+    final doneSets = exercise.sets.where((s) => s.isDone).length;
+    if (doneSets > 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Remplacer l\'exercice ?'),
+          content: Text(
+              '$doneSets série(s) déjà validée(s) sur cet exercice seront '
+              'perdues.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Remplacer'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
+
+    final suggestions = suggestReplacements(
+      target: exercise.detail,
+      all: all,
+      excludeIds: {for (final e in session.exercises) e.exercise.id},
+    );
+    // Retourne un ExerciseDetail, ou 'browse' pour ouvrir le catalogue.
+    final choice = await showModalBottomSheet<Object>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                'Remplacer ${exercise.exercise.name}',
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+            ),
+            if (suggestions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Aucun exercice proche dans le catalogue.',
+                  style: TextStyle(
+                      color: Theme.of(sheetContext)
+                          .colorScheme
+                          .onSurfaceVariant),
+                ),
+              ),
+            for (final detail in suggestions)
+              ListTile(
+                title: Text(detail.exercise.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                    '${detail.exercise.equipment} · ${detail.muscleLabel}'),
+                onTap: () => Navigator.of(sheetContext).pop(detail),
+              ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.search),
+              title: const Text('Chercher dans tout le catalogue…'),
+              onTap: () => Navigator.of(sheetContext).pop('browse'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !context.mounted) return;
+
+    ExerciseDetail? replacement = choice is ExerciseDetail ? choice : null;
+    if (choice == 'browse') {
+      replacement = await showExercisePicker(context);
+      if (!context.mounted) return;
+    }
+    if (replacement == null) return;
+    await ref
+        .read(activeSessionProvider.notifier)
+        .replaceExercise(exerciseIndex, replacement);
+  }
+
   /// Note discrète sur l'exercice (réglages machine, sensations…),
   /// pré-remplie avec la note en cours, sinon celle de la dernière séance.
   Future<void> _editNote(BuildContext context, WidgetRef ref) async {
@@ -420,9 +518,15 @@ class _ExerciseCard extends ConsumerWidget {
                   onSelected: (value) {
                     if (value == 'remove') {
                       controller.removeExercise(exerciseIndex);
+                    } else if (value == 'replace') {
+                      _replaceExercise(context, ref);
                     }
                   },
                   itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'replace',
+                      child: Text('Remplacer l\'exercice'),
+                    ),
                     PopupMenuItem(
                       value: 'remove',
                       child: Text('Retirer l\'exercice'),

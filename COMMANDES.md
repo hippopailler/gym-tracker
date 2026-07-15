@@ -79,15 +79,19 @@ Règle d'or apprise à la dure : `m.alterTable(...)` recrée la table selon le s
 
 - Tout vit dans un fichier SQLite privé sur l'appareil (`gym_tracker.sqlite`)
 - Survit aux mises à jour ; détruit par la désinstallation
-- Pas encore d'export → **ne pas désinstaller l'app** sans avoir fait l'export (à développer, cf. roadmap)
+- **Export/import disponible** : Accueil → ⚙️ Paramètres → « Exporter mes données »
+  (fichier .json partageable) / « Importer un export » (doublons ignorés, ré-import sans risque).
+  Faire un export avant toute désinstallation ou changement de téléphone
 
 ---
 
 ## Roadmap — idées d'amélioration
 
 ### Priorité 1 (protéger les données)
-- [ ] **Export / import JSON** : bouton « Exporter mes données » → fichier partageable (Drive, mail) + import au premier lancement. Indispensable avant d'accumuler des mois d'historique
-- [ ] **Renommer l'identifiant d'app** (`com.example.gym` → définitif) — à faire EN MÊME TEMPS que l'export/import pour migrer les données du téléphone
+- [x] **Export / import JSON** : ⚙️ Paramètres → fichier .json partageable + import avec dédoublonnage (séances par nom+date, exercices réconciliés par nom) — *fait le 16/07/2026*
+- [ ] **Renommer l'identifiant d'app** (`com.example.gym` → définitif). Désormais faisable
+  sans perte : renommer → installer (nouvelle app) → exporter depuis l'ancienne → importer
+  dans la nouvelle → désinstaller l'ancienne. À planifier avec l'utilisateur au téléphone
 
 ### Vite rentables
 - [x] Records personnels affichés sur l'accueil et la fiche exercice (tableau des PR) — *fait le 12/07/2026*
@@ -101,9 +105,11 @@ Règle d'or apprise à la dure : `m.alterTable(...)` recrée la table selon le s
 - [x] Exercices street workout (Muscle-up, Pistol squat, Front lever, L-sit…) — *fait le 13/07/2026*
 - [x] Exercices cardio durée + distance : Rameur, Skieur, Course — *fait le 13/07/2026*
 - [x] Import de l'historique papier (56 séances, 16/03 → 08/07/2026) + templates des séances types — *fait le 13/07/2026*
+- [x] Accueil : les 3 dernières séances affichées (au lieu d'une seule) — *fait le 16/07/2026*
+- [x] Graphique de comparaison entre deux exercices (bouton 📈 à côté du sélecteur de Progression) — *fait le 16/07/2026*
+- [x] Exercices de remplacement en séance (menu ⋮ → « Remplacer l'exercice » : suggestions par muscles partagés + même type) — *fait le 16/07/2026*
 - [ ] Saisie du RPE par série (la colonne existe déjà en base)
 - [ ] Écran de démarrage : reprendre le dernier template utilisé en un tap
-- Sur la page d'acceuil affiché les 3 dernières séances et pas juste la dernière.
 
 ### Moyen terme
 - [ ] **Programme hebdomadaire** : planifier Push lundi / Pull mercredi… l'accueil propose la séance du jour

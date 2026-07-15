@@ -1,6 +1,6 @@
 # Gym Tracker — Journal d'avancement
 
-> Trace de tout ce qui a été construit, décidé et appris. Dernière mise à jour : **13 juillet 2026**.
+> Trace de tout ce qui a été construit, décidé et appris. Dernière mise à jour : **16 juillet 2026**.
 
 ## L'application aujourd'hui
 
@@ -35,16 +35,21 @@ choix** (orange, violet, vert, bleu — persistées en base, sélecteur sur l'ac
 | Exercices perso | Édition complète (nom, équipement, groupes, type, repos) via le menu ⋮ dans la liste d'un groupe, en plus de la suppression |
 | Multi-sélection | Le picker d'exercices propose un mode multi (cocher puis « Ajouter n exercice(s) ») utilisé par l'éditeur de template et la séance active ; les exercices déjà présents sont grisés |
 | Thème | 4 accents (orange/violet/vert/bleu) + mode sombre/clair, persistés dans `app_settings`, sélecteur 🎨 sur l'accueil |
+| Export / import JSON | ⚙️ Paramètres (accueil) : export .json complet (exercices, templates, séances) via la feuille de partage Android ; import avec **dédoublonnage** (séances par nom+date, templates par nom) et **réconciliation des exercices par nom** (jamais par id — les exercices inconnus sont créés en perso). Ré-importer le même fichier est sans effet. Transaction unique, bilan affiché |
+| Séances récentes | L'accueil affiche les **3 dernières séances** (nom, date, séries, volume) |
+| Comparaison | Écran « Comparer deux exercices » (bouton 📈 à côté du sélecteur de Progression) : 2 courbes alignées sur les dates réelles, même métrique (poids max / 1RM / volume, ou durées) ; le 2ᵉ choix est filtré au même type de mesure |
+| Remplacement | En séance, menu ⋮ → « Remplacer l'exercice » : suggestions classées (muscles partagés > même type > même équipement), accès au catalogue complet, cibles et repos conservés ; confirmation si des séries étaient validées |
 
 ### Architecture (lib/)
 
 - `core/` — thème, formats FR, router (StatefulShellRoute 5 onglets + routes plein écran `/session`, `/history/edit/:id`), providers Riverpod centraux
 - `tool/generate_icons_test.dart` — générateur des sources d'icône (assets/icon/), puis `dart run flutter_launcher_icons`
 - `data/database/` — `tables.dart` (9 tables), `database.dart` (migrations + seed + réglages), `seed_data.dart` (catalogue + templates), `history_data.dart` (historique transcrit des notes + parseur), 3 DAOs
+- `data/export/` — `data_export.dart` : format JSON d'export + `DataImporter` (remap des ids par nom, dédoublonnage, transaction)
 - `data/repositories/` — exercise / template / session
 - `domain/models/` — ExerciseDetail, TemplateWithExercises, SessionDetail/Summary, ActiveSessionState (JSON-sérialisable), PersonalBests, muscle_groups (catalogue slugs+icônes)
-- `domain/services/` — ProgressionService (suggestions, Epley, volume), RestTimerController (basé heure de fin absolue), NotificationService
-- `features/` — home, templates, exercises, session, calendar (+ session_edit_screen), progress
+- `domain/services/` — ProgressionService (suggestions, Epley, volume), RestTimerController (basé heure de fin absolue), NotificationService, ExportService (sérialisation), replacement_service (suggestions de remplacement)
+- `features/` — home, templates, exercises, session, calendar (+ session_edit_screen), progress (+ compare_screen), settings (export/import)
 - `widgets/` — set_row, rest_timer_bar, exercise_picker_sheet, stat_tile, empty_state
 
 ### Base de données — schéma v4
@@ -86,17 +91,16 @@ Historique des migrations (toutes **idempotentes**, testées) :
   pour l'app dans les paramètres Android (sinon repli inexact, ~1 min de retard)
 - **Clé de signature release** : `android/app/upload-keystore.jks` + mots de passe dans `android/key.properties`
   (exclus de git) — **à sauvegarder en lieu sûr, irremplaçable**
-- ⚠️ Identifiant d'app encore `com.example.gym` → à renommer définitivement au plus vite
-  (le changer = nouvelle app = données à re-migrer). **L'historique importé est regénérable**
-  (il vit dans le code, `history_data.dart`), mais les séances saisies dans l'app ne le sont pas
-- 📲 Réinstaller l'APK (`flutter build apk --release` + `adb install -r …`) pour récupérer
-  la migration v4 : l'import des 56 séances se fait tout seul au premier lancement
+- ⚠️ Identifiant d'app encore `com.example.gym`. Le renommage est désormais **faisable sans
+  perte** grâce à l'export/import : renommer → installer (l'app apparaît en double) →
+  exporter depuis l'ancienne → importer dans la nouvelle → désinstaller l'ancienne.
+  À faire avec l'utilisateur devant le téléphone (deux manipulations dans l'app)
 
 ## Qualité
 
-- `flutter analyze` : 0 problème · **20 tests verts** :
+- `flutter analyze` : 0 problème · **21 tests verts** :
   - progression (suggestions reps + durée, Epley, volume)
-  - base de données (seed, CRUD templates, séances, records, brouillon actif, corrections/suppressions/**ajouts** sur séance passée, records datés + vue d'ensemble, exercice en durée, **cardio + note d'exercice**)
+  - base de données (seed, CRUD templates, séances, records, brouillon actif, corrections/suppressions/**ajouts** sur séance passée, records datés + vue d'ensemble, exercice en durée, **cardio + note d'exercice**, **export/import JSON aller-retour** : poids décimaux préservés, remap des ids par nom, ré-import sans doublon)
   - **migrations** (v1 → v4 complet, avec import de l'historique + reprise après migration interrompue)
   - **navigation** (test widget : abandon de séance vide, remplacement de séance en cours)
 - L'import d'historique ne s'exécute pas dans les bases de test (`AppDatabase.forTesting`,
@@ -106,5 +110,20 @@ Historique des migrations (toutes **idempotentes**, testées) :
 
 ## Prochaines étapes envisagées
 
-Voir la roadmap détaillée dans [COMMANDES.md](COMMANDES.md). Priorité recommandée :
-**export/import JSON + renommage de l'identifiant d'app** (à faire ensemble, avant accumulation d'historique).
+Voir la roadmap détaillée dans [COMMANDES.md](COMMANDES.md). L'export/import JSON est fait ;
+prochaine priorité : **renommage de l'identifiant d'app** (procédure décrite dans la section
+Téléphone), puis RPE par série et reprise du dernier template en un tap.
+
+## Portage iPhone (étudié le 16/07/2026)
+
+Verdict : **faisable, pas de blocage technique** — 100 % du code Dart est portable
+(drift/SQLite, Riverpod, go_router, fl_chart, share_plus, file_picker fonctionnent sur iOS).
+Ce qui manque :
+1. Le dossier `ios/` n'existe pas (projet créé Android-only) → `flutter create --platforms=ios .`
+2. flutter_local_notifications : ajouter l'init Darwin + demande de permission iOS
+   (pas d'alarme exacte sur iOS, mais les notifs planifiées classiques suffisent pour le repos)
+3. Icônes iOS : `flutter_launcher_icons` avec `ios: true`
+4. **La vraie contrainte est Apple** : compiler exige Xcode (ce Mac ✓) ; installer sur un
+   iPhone exige un compte développeur. Compte gratuit = l'app expire tous les 7 jours
+   (re-brancher et re-signer chaque semaine). Compte payant (99 $/an) = TestFlight, l'app
+   dure. Estimation : 1 à 2 sessions de travail pour un portage propre.

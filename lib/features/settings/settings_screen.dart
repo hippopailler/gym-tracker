@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart' as share_plus;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/providers.dart';
 import '../../data/export/data_export.dart';
 
+/// Paramètres : export/import JSON de toutes les données.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -16,77 +18,63 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _exporting = false;
-  bool _importing = false;
+  bool _busy = false;
 
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  /// Écrit un vrai fichier .json et ouvre la feuille de partage
+  /// (Drive, mail, Bluetooth…).
   Future<void> _export() async {
-    setState(() => _exporting = true);
+    setState(() => _busy = true);
     try {
-      final service = ref.read(exportServiceProvider);
-      final export = await service.createExport();
-      final jsonString = export.toJsonString();
-      final fileName =
-          'gym-export-${DateTime.now().toIso8601String().split('T').first}.json';
-
-      // Partager le fichier
-      await share_plus.Share.share(
-        jsonString,
-        subject: fileName,
-      );
-      if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Export réussi · Partage initié'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      final export = await ref.read(exportServiceProvider).createExport();
+      final date = DateTime.now().toIso8601String().split('T').first;
+      final file =
+          File('${(await getTemporaryDirectory()).path}/gym-export-$date.json');
+      await file.writeAsString(export.toJsonString());
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(file.path, mimeType: 'application/json')],
+        subject: 'Export Gym Tracker $date',
+      ));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur d\'export : $e')),
-        );
-      }
+      _snack('Erreur d\'export : $e');
     } finally {
-      if (mounted) setState(() => _exporting = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _import() async {
+    setState(() => _busy = true);
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        dialogTitle: 'Importer un export JSON',
+        type: FileType.any,
+        dialogTitle: 'Choisir un export Gym Tracker (.json)',
       );
+      final path = result?.files.firstOrNull?.path;
+      if (path == null) return;
 
-      if (result == null || result.files.isEmpty) return;
-
-      final file = File(result.files.first.path!);
-      final jsonString = await file.readAsString();
-      final export = DataExport.fromJsonString(jsonString);
-
+      final export =
+          DataExport.fromJsonString(await File(path).readAsString());
       if (export == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Fichier JSON invalide')),
-          );
-        }
+        _snack('Ce fichier n\'est pas un export Gym Tracker valide.');
         return;
       }
 
-      // Confirmer l'import
-      final customCount = export.exercises
-          .where((e) => (e as Map<String, dynamic>)['isCustom'] == true)
-          .length;
+      if (!mounted) return;
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Importer les données ?'),
           content: Text(
-            'Cela va importer ${export.sessions.length} séances, '
-            '${export.templates.length} templates et '
-            '$customCount exercices personnalisés.',
+            'Fichier du ${export.exportDate.split('T').first} : '
+            '${export.sessions.length} séance(s), '
+            '${export.templates.length} template(s). '
+            'Les doublons (même nom et même date) seront ignorés.',
           ),
           actions: [
             TextButton(
@@ -100,105 +88,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       );
+      if (confirm != true) return;
 
-      if (confirm != true || !mounted) return;
-
-      setState(() => _importing = true);
-
-      final database = ref.read(databaseProvider);
-      await DataImporter.importData(database, export);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Import réussi'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        // Invalider les providers pour forcer la recharge
-        ref.invalidate(exercisesProvider);
-        ref.invalidate(templatesProvider);
-        ref.invalidate(sessionSummariesProvider);
-      }
+      final bilan =
+          await DataImporter.importData(ref.read(databaseProvider), export);
+      _snack(
+        '${bilan.importedSessions} séance(s) importée(s)'
+        '${bilan.skippedSessions > 0 ? ', ${bilan.skippedSessions} doublon(s) ignoré(s)' : ''}'
+        '${bilan.importedTemplates > 0 ? ', ${bilan.importedTemplates} template(s)' : ''}'
+        '${bilan.createdExercises > 0 ? ', ${bilan.createdExercises} exercice(s) créé(s)' : ''}.',
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur d\'import : $e')),
-        );
-      }
+      _snack('Erreur d\'import : $e');
     } finally {
-      if (mounted) setState(() => _importing = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Paramètres')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          const SizedBox(height: 8),
           const Text(
-            'Données',
+            'Mes données',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Exporter mes données',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Télécharge un fichier JSON contenant toutes tes '
-                    'séances, templates et exercices. Indispensable avant '
-                    'de changer d\'app ou de téléphone.',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: _exporting ? null : _export,
-                    icon: const Icon(Icons.download),
-                    label: const Text('Exporter'),
-                  ),
-                ],
-              ),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            'Tout est stocké sur ce téléphone, rien ne part sur un serveur. '
+            'Pense à exporter régulièrement (Drive, mail…) pour ne rien '
+            'perdre en cas de casse ou de changement de téléphone.',
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 12),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Importer des données',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Charge un fichier d\'export JSON précédent. Les '
-                    'séances, templates et exercices importés s\'ajoutent '
-                    'aux données existantes.',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: _importing ? null : _import,
-                    icon: const Icon(Icons.upload),
-                    label: const Text('Importer'),
-                  ),
-                ],
-              ),
+            child: ListTile(
+              leading: Icon(Icons.upload_file, color: scheme.primary),
+              title: const Text('Exporter mes données',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text(
+                  'Fichier .json complet : séances, templates, exercices'),
+              onTap: _busy ? null : _export,
             ),
           ),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.download, color: scheme.primary),
+              title: const Text('Importer un export',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text(
+                  'Recharge un fichier exporté — les doublons sont ignorés'),
+              onTap: _busy ? null : _import,
+            ),
+          ),
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
         ],
       ),
     );

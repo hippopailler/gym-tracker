@@ -156,6 +156,36 @@ class ActiveSessionController extends StateNotifier<ActiveSessionState?> {
     _persist();
   }
 
+  /// Remplace un exercice par un autre (machine occupée, douleur…) en
+  /// conservant les cibles de séries et le temps de repos quand les types
+  /// sont compatibles. Les séries déjà validées sont perdues.
+  Future<void> replaceExercise(int exerciseIndex, ExerciseDetail detail) async {
+    final current = state;
+    if (current == null || exerciseIndex >= current.exercises.length) return;
+    if (current.exercises.any((e) => e.exercise.id == detail.exercise.id)) {
+      return;
+    }
+    final old = current.exercises[exerciseIndex];
+    final sameKind =
+        old.exercise.exerciseType == detail.exercise.exerciseType;
+    final replacement = await _buildExercise(
+      detail: detail,
+      targetSets: detail.isCardio ? 1 : old.targetSets,
+      targetReps: sameKind
+          ? old.targetReps
+          : detail.isCardio
+              ? 600
+              : detail.isDuration
+                  ? 30
+                  : 10,
+      restSeconds: old.restSeconds,
+    );
+    final exercises = [...current.exercises];
+    exercises[exerciseIndex] = replacement;
+    state = current.copyWith(exercises: exercises);
+    _persist();
+  }
+
   void removeExercise(int exerciseIndex) {
     final current = state;
     if (current == null) return;

@@ -65,7 +65,7 @@ class ExportService {
                 'sets': [
                   for (final set in ex.sets)
                     {
-                      'weight': set.weightKg.toInt(),
+                      'weight': set.weightKg,
                       'reps': set.reps,
                       if ((set.durationSeconds ?? 0) > 0) 'durationSeconds': set.durationSeconds,
                       if ((set.distanceMeters ?? 0) > 0) 'distanceMeters': set.distanceMeters,

@@ -6,6 +6,7 @@ import '../features/calendar/session_edit_screen.dart';
 import '../features/exercises/exercises_screen.dart';
 import '../features/exercises/group_exercises_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/progress/compare_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/session/active_session_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -89,6 +90,14 @@ final GoRouter appRouter = GoRouter(
       path: '/settings',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/progress/compare',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => CompareScreen(
+        initialExerciseId:
+            int.tryParse(state.uri.queryParameters['a'] ?? ''),
+      ),
     ),
   ],
 );

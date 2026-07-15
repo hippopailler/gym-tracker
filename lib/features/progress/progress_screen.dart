@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/formats.dart';
 import '../../core/providers.dart';
@@ -107,11 +108,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              _ExerciseSelector(
-                key: ValueKey('selector-$selectedGroup'),
-                exercises: inGroup,
-                selectedId: selectedId,
-                onChanged: (id) => setState(() => _selectedExerciseId = id),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _ExerciseSelector(
+                      key: ValueKey('selector-$selectedGroup'),
+                      exercises: inGroup,
+                      selectedId: selectedId,
+                      onChanged: (id) =>
+                          setState(() => _selectedExerciseId = id),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.outlined(
+                    tooltip: 'Comparer avec un autre exercice',
+                    icon: const Icon(Icons.ssid_chart),
+                    onPressed: () =>
+                        context.push('/progress/compare?a=$selectedId'),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               _ProgressBody(

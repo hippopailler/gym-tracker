@@ -2,8 +2,10 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym/data/database/database.dart';
 import 'package:gym/data/database/seed_data.dart';
+import 'package:gym/data/export/data_export.dart';
 import 'package:gym/domain/models/session_models.dart';
 import 'package:gym/domain/models/template_models.dart';
+import 'package:gym/domain/services/export_service.dart';
 
 void main() {
   late AppDatabase db;
@@ -123,6 +125,65 @@ void main() {
     expect(entry.sets.single.distanceMeters, 2500);
     expect(await db.sessionDao.lastNoteForExercise(rower.exercise.id),
         'Résistance 6');
+  });
+
+  test('export/import JSON : aller-retour complet vers une base vierge',
+      () async {
+    // Base source : un exercice perso + une séance avec poids décimal.
+    final customId = await db.exerciseDao.createExercise(
+      name: 'Ma machine bizarre',
+      equipment: 'Machine',
+      defaultRestSeconds: 90,
+      muscleSlugs: ['pectoraux'],
+    );
+    await db.sessionDao.saveCompletedSession(
+      CompletedSessionDraft(
+        date: DateTime(2026, 7, 14, 18),
+        templateId: null,
+        name: 'Test export',
+        notes: '',
+        durationSeconds: 1800,
+        exercises: [
+          CompletedExerciseDraft(
+            exerciseId: customId,
+            notes: 'Siège position 4',
+            sets: const [CompletedSetDraft(weightKg: 57.5, reps: 10)],
+          ),
+        ],
+      ),
+    );
+
+    final export = await ExportService(database: db).createExport();
+    // L'aller-retour passe par la vraie chaîne JSON (types num, etc.).
+    final reread = DataExport.fromJsonString(export.toJsonString());
+    expect(reread, isNotNull);
+
+    // Import dans une base vierge : l'exercice perso est recréé (avec un
+    // id potentiellement différent) et la séance le retrouve par nom.
+    final target = AppDatabase.forTesting(NativeDatabase.memory());
+    final bilan = await DataImporter.importData(target, reread!);
+    expect(bilan.importedSessions, 1);
+    expect(bilan.createdExercises, 1);
+
+    final exercises = await target.exerciseDao.watchAllWithMuscles().first;
+    final imported = exercises
+        .firstWhere((e) => e.exercise.name == 'Ma machine bizarre');
+    expect(imported.muscleSlugs, ['pectoraux']);
+
+    final summaries = await target.sessionDao.watchSummaries().first;
+    final detail = await target.sessionDao.getDetail(summaries.single.session.id);
+    final entry = detail!.exercises.single;
+    expect(entry.exercise.id, imported.exercise.id);
+    expect(entry.sets.single.weightKg, 57.5); // décimales préservées
+    expect(entry.notes, 'Siège position 4');
+
+    // Ré-importer le même fichier ne crée aucun doublon.
+    final again = await DataImporter.importData(target, reread);
+    expect(again.importedSessions, 0);
+    expect(again.skippedSessions, 1);
+    expect((await target.sessionDao.watchSummaries().first).length, 1);
+
+    await target.close();
   });
 
   test('sauvegarde d\'une séance et dernière performance', () async {
