@@ -52,18 +52,27 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     final exercisesAsync = ref.watch(exercisesProvider);
+    final withData =
+        ref.watch(exercisesWithDataProvider).valueOrNull ?? const <int>{};
 
     return Scaffold(
       appBar: AppBar(title: const Text('Progression')),
       body: exercisesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Erreur : $error')),
-        data: (exercises) {
+        data: (allExercises) {
+          // Seuls les exercices déjà pratiqués sont proposés : inutile de
+          // noyer le filtre avec le reste du catalogue.
+          final exercises = [
+            for (final e in allExercises)
+              if (withData.contains(e.exercise.id)) e,
+          ];
           if (exercises.isEmpty) {
             return const EmptyState(
               icon: Icons.show_chart,
-              title: 'Aucun exercice',
-              message: 'La base d\'exercices est vide.',
+              title: 'Pas encore de données',
+              message:
+                  'Termine une première séance pour voir ta progression ici.',
             );
           }
 

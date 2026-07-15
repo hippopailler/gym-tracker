@@ -15,6 +15,9 @@ class SessionRepository {
   Stream<List<SessionSummary>> watchSummaries() =>
       _db.sessionDao.watchSummaries();
 
+  Stream<Set<int>> watchExerciseIdsWithData() =>
+      _db.sessionDao.watchExerciseIdsWithData();
+
   Future<SessionDetail?> getDetail(int sessionId) =>
       _db.sessionDao.getDetail(sessionId);
 

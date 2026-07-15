@@ -60,18 +60,26 @@ class _CompareScreenState extends ConsumerState<CompareScreen> {
   @override
   Widget build(BuildContext context) {
     final exercisesAsync = ref.watch(exercisesProvider);
+    final withData =
+        ref.watch(exercisesWithDataProvider).valueOrNull ?? const <int>{};
 
     return Scaffold(
       appBar: AppBar(title: const Text('Comparer deux exercices')),
       body: exercisesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Erreur : $error')),
-        data: (exercises) {
+        data: (allExercises) {
+          // Comme en Progression : uniquement les exercices avec des données.
+          final exercises = [
+            for (final e in allExercises)
+              if (withData.contains(e.exercise.id)) e,
+          ];
           if (exercises.length < 2) {
             return const EmptyState(
               icon: Icons.ssid_chart,
-              title: 'Pas assez d\'exercices',
-              message: 'Il faut au moins deux exercices pour comparer.',
+              title: 'Pas assez de données',
+              message:
+                  'Il faut au moins deux exercices déjà pratiqués pour comparer.',
             );
           }
 

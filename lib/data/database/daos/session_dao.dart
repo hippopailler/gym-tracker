@@ -467,6 +467,16 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
     });
   }
 
+  /// Ids des exercices ayant au moins une série enregistrée — pour ne
+  /// proposer que les exercices « avec données » dans l'onglet Progression.
+  Stream<Set<int>> watchExerciseIdsWithData() {
+    return customSelect(
+      'SELECT DISTINCT se.exercise_id AS id FROM session_exercises se '
+      'INNER JOIN set_entries s ON s.session_exercise_id = se.id',
+      readsFrom: {sessionExercises, setEntries},
+    ).watch().map((rows) => {for (final row in rows) row.read<int>('id')});
+  }
+
   /// Toutes les séances avec exercices et séries (pour l'export).
   Future<List<SessionDetail>> getAllWithExercises() async {
     final sessions = await select(workoutSessions).get();

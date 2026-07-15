@@ -87,6 +87,12 @@ final exerciseProgressProvider =
       ref.watch(sessionRepositoryProvider).watchProgress(exerciseId),
 );
 
+/// Ids des exercices ayant au moins une série enregistrée : les sélecteurs
+/// de Progression/Comparaison ne proposent que ceux-là.
+final exercisesWithDataProvider = StreamProvider<Set<int>>(
+  (ref) => ref.watch(sessionRepositoryProvider).watchExerciseIdsWithData(),
+);
+
 /// Records par exercice pour la carte de l'accueil (mise à jour continue).
 final prHighlightsProvider = StreamProvider<List<PrHighlight>>(
   (ref) => ref.watch(sessionRepositoryProvider).watchPrHighlights(),

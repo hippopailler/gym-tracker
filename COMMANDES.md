@@ -108,6 +108,7 @@ Règle d'or apprise à la dure : `m.alterTable(...)` recrée la table selon le s
 - [x] Accueil : les 3 dernières séances affichées (au lieu d'une seule) — *fait le 16/07/2026*
 - [x] Graphique de comparaison entre deux exercices (bouton 📈 à côté du sélecteur de Progression) — *fait le 16/07/2026*
 - [x] Exercices de remplacement en séance (menu ⋮ → « Remplacer l'exercice » : suggestions par muscles partagés + même type) — *fait le 16/07/2026*
+- [x] Progression/Comparaison : seuls les exercices déjà pratiqués apparaissent dans les filtres — *fait le 16/07/2026*
 - [ ] Saisie du RPE par série (la colonne existe déjà en base)
 - [ ] Écran de démarrage : reprendre le dernier template utilisé en un tap
 
