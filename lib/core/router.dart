@@ -8,6 +8,7 @@ import '../features/exercises/group_exercises_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/session/active_session_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../features/templates/template_edit_screen.dart';
 import '../features/templates/templates_screen.dart';
 
@@ -83,6 +84,11 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => SessionEditScreen(
         sessionId: int.parse(state.pathParameters['id']!),
       ),
+    ),
+    GoRoute(
+      path: '/settings',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );

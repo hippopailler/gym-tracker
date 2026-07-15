@@ -466,4 +466,15 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
       return bySession.values.toList();
     });
   }
+
+  /// Toutes les séances avec exercices et séries (pour l'export).
+  Future<List<SessionDetail>> getAllWithExercises() async {
+    final sessions = await select(workoutSessions).get();
+    final result = <SessionDetail>[];
+    for (final session in sessions) {
+      final detail = await getDetail(session.id);
+      if (detail != null) result.add(detail);
+    }
+    return result;
+  }
 }

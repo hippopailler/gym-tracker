@@ -110,4 +110,17 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
   Future<void> deleteExercise(int id) {
     return (delete(exercises)..where((e) => e.id.equals(id))).go();
   }
+
+  /// Tous les exercices (synchrone pour l'export).
+  Future<List<Exercise>> getAllExercises() {
+    return select(exercises).get();
+  }
+
+  /// Groupes musculaires d'un exercice.
+  Future<List<String>> getMusclesForExercise(int exerciseId) async {
+    final muscles = await (select(exerciseMuscles)
+          ..where((m) => m.exerciseId.equals(exerciseId)))
+        .get();
+    return muscles.map((m) => m.muscleGroup).toList();
+  }
 }

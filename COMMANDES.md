@@ -103,14 +103,16 @@ Règle d'or apprise à la dure : `m.alterTable(...)` recrée la table selon le s
 - [x] Import de l'historique papier (56 séances, 16/03 → 08/07/2026) + templates des séances types — *fait le 13/07/2026*
 - [ ] Saisie du RPE par série (la colonne existe déjà en base)
 - [ ] Écran de démarrage : reprendre le dernier template utilisé en un tap
+- Sur la page d'acceuil affiché les 3 dernières séances et pas juste la dernière.
 
 ### Moyen terme
 - [ ] **Programme hebdomadaire** : planifier Push lundi / Pull mercredi… l'accueil propose la séance du jour
 - [ ] **Stats globales** : volume par groupe musculaire par semaine (équilibre push/pull), régularité, heatmap annuelle
 - [ ] Suggestion de deload après stagnation détectée (3 séances sans progression)
 - [ ] Minuterie d'échauffement + calcul des barres d'échauffement (% du 1RM)
-- [ ] Superset / circuits dans les templates
+- [ ] Superset /Biset / circuits dans les templates
 - [ ] Graphique de comparaison entre deux exercices
+- Proposer des exercices de remplacement si un exercice n'est pas possible
 
 ### Long terme
 - [ ] Sauvegarde cloud optionnelle (chiffrée)

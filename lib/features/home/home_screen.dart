@@ -159,6 +159,11 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () =>
                 ref.read(themeSettingsProvider.notifier).toggleMode(),
           ),
+          IconButton(
+            tooltip: 'Paramètres',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/settings'),
+          ),
         ],
       ),
       body: ListView(
@@ -299,37 +304,40 @@ class HomeScreen extends ConsumerWidget {
             label: const Text('Séance libre'),
           ),
 
-          // Dernière séance
+          // Trois dernières séances
           summariesAsync.maybeWhen(
             data: (summaries) {
               if (summaries.isEmpty) return const SizedBox.shrink();
-              final last = summaries.first;
+              final recent = summaries.take(3).toList();
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
                   const Text(
-                    'Dernière séance',
+                    'Séances récentes',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 4),
-                  Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            scheme.primary.withValues(alpha: 0.15),
-                        child: Icon(Icons.check, color: scheme.primary),
-                      ),
-                      title: Text(last.session.name,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text(
-                        '${formatDateShort(last.session.date)} · '
-                        '${last.setCount} séries · '
-                        '${formatVolume(last.totalVolume)}',
+                  for (var i = 0; i < recent.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 6),
+                    Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              scheme.primary.withValues(alpha: 0.15),
+                          child: Icon(Icons.check, color: scheme.primary),
+                        ),
+                        title: Text(recent[i].session.name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
+                        subtitle: Text(
+                          '${formatDateShort(recent[i].session.date)} · '
+                          '${recent[i].setCount} séries · '
+                          '${formatVolume(recent[i].totalVolume)}',
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               );
             },

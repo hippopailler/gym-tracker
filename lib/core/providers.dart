@@ -10,6 +10,7 @@ import '../domain/models/exercise_models.dart';
 import '../domain/models/progress_models.dart';
 import '../domain/models/session_models.dart';
 import '../domain/models/template_models.dart';
+import '../domain/services/export_service.dart';
 import '../domain/services/notification_service.dart';
 import '../domain/services/progression_service.dart';
 import '../domain/services/rest_timer_controller.dart';
@@ -48,6 +49,10 @@ final sessionRepositoryProvider = Provider<SessionRepository>(
     ref.watch(databaseProvider),
     ref.watch(progressionServiceProvider),
   ),
+);
+
+final exportServiceProvider = Provider<ExportService>(
+  (ref) => ExportService(database: ref.watch(databaseProvider)),
 );
 
 // ----- Flux de données -----

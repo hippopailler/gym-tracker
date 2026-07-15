@@ -74,6 +74,10 @@ class TemplateDao extends DatabaseAccessor<AppDatabase>
     return _baseQuery().watch().map(_groupRows);
   }
 
+  Future<List<TemplateWithExercises>> getAllWithExercises() async {
+    return _groupRows(await _baseQuery().get());
+  }
+
   Future<TemplateWithExercises?> getWithExercises(int templateId) async {
     final query = _baseQuery()
       ..where(workoutTemplates.id.equals(templateId));
